@@ -3,11 +3,37 @@
   <head>
     <meta charset="UTF-8" />
     <title>Hello World!</title>
-
+    <link rel="stylesheet" href="./src/index.css">
   </head>
   <body>
-    <h1>💖 Hello World!</h1>
-    <p>Welcome to your Electron application.</p>
+    <div id="titlebar">
+      <div id="playback-controls">
+        <div id="prev-button">
+          <img src="./src/assets/icons/skip_prev.svg" alt="Previous" />
+        </div>
+        <div id="play-pause-button">
+          <img src="./src/assets/icons/play.svg" alt="Play/Pause" />
+        </div>
+        <div id="next-button">
+          <img src="./src/assets/icons/skipnext.svg" alt="Next" />
+        </div>
+      </div>
+      <div id="window-controls">
+        <div id="pin-button">
+          <img src="./src/assets/icons/pin.svg" alt="Pin" />
+        </div>
+        <div id="minimize-button">
+          <img src="./src/assets/icons/minimize.svg" alt="Minimize" />
+        </div>
+        <div id="close-button">
+          <img src="./src/assets/icons/close.svg" alt="Close" />
+        </div>
+      </div>
+    </div>
+    <div id="content">
+      <h1>💖 Hello World!</h1>
+      <p>Welcome to your Electron application.</p>
+    </div>
     <script type="module" src="/src/renderer.js"></script>
   </body>
 </html>

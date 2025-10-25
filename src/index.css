@@ -2,7 +2,117 @@ body {
   font-family:
     -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial,
     sans-serif;
-  margin: auto;
+  margin: 0;
+  padding: 0;
+  background-color: #ffffff;
+}
+
+#titlebar {
+  height: 61px;
+  width: 100%;
+  -webkit-app-region: drag;
+  background-color: rgba(213,227,243,0.38);
+  border-top-left-radius: 10px;
+  border-top-right-radius: 10px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0;
+}
+
+#titlebar > div {
+  -webkit-app-region: no-drag;
+  cursor: pointer;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+#titlebar img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  filter: invert(8%) sepia(10%) saturate(1500%) hue-rotate(210deg) brightness(95%) contrast(90%);
+}
+
+#playback-controls {
+  display: flex;
+  align-items: center;
+  gap: 5px; /* Reduced space between playback buttons */
+  margin-left: 15px;
+}
+
+#window-controls {
+  display: flex;
+  align-items: center;
+  gap: 5px; /* Reduced space between window control buttons */
+  margin-right: 15px;
+}
+
+#pin-button,
+#minimize-button,
+#close-button {
+  width: 24px;
+  height: 24px;
+}
+
+#play-pause-button {
+  width: 27px;
+  height: 32px;
+}
+
+#prev-button,
+#next-button {
+  width: 24px;
+  height: 24px;
+}
+
+/* Responsive behavior - hide buttons from left to right when resizing */
+@media (max-width: 300px) {
+  #prev-button {
+    display: none;
+  }
+}
+
+@media (max-width: 250px) {
+  #next-button {
+    display: none;
+  }
+}
+
+@media (max-width: 200px) {
+  #play-pause-button {
+    display: none;
+  }
+}
+
+@media (max-width: 150px) {
+  #minimize-button {
+    display: none;
+  }
+}
+
+@media (max-width: 70px) {
+  #pin-button {
+    display: none;
+  }
+}
+
+#content {
   max-width: 38rem;
+  margin: auto;
+  padding: 2rem;
+}
+
+@media (max-width: 100px) {
+  #minimize-button {
+    display: none;
+  }
+}
+
+#content {
+  max-width: 38rem;
+  margin: auto;
   padding: 2rem;
 }

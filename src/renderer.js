@@ -4,30 +4,77 @@
  * Electron, visit:
  *
  * https://electronjs.org/docs/tutorial/process-model
- *
- * By default, Node.js integration in this file is disabled. When enabling Node.js integration
- * in a renderer process, please be aware of potential security implications. You can read
- * more about security risks here:
- *
- * https://electronjs.org/docs/tutorial/security
- *
- * To enable Node.js integration in this file, open up `main.js` and enable the `nodeIntegration`
- * flag:
- *
- * ```
- *  // Create the browser window.
- *  mainWindow = new BrowserWindow({
- *    width: 800,
- *    height: 600,
- *    webPreferences: {
- *      nodeIntegration: true
- *    }
- *  });
- * ```
  */
 
 import './index.css';
 
-console.log(
-  '👋 This message is being logged by "renderer.js", included via Vite',
-);
+// Initialize titlebar controls
+document.addEventListener('DOMContentLoaded', () => {
+  // Close button
+  const closeButton = document.getElementById('close-button');
+  if (closeButton) {
+    closeButton.addEventListener('click', () => {
+      window.electronAPI.closeWindow();
+    });
+  }
+
+  // Minimize button
+  const minimizeButton = document.getElementById('minimize-button');
+  if (minimizeButton) {
+    minimizeButton.addEventListener('click', () => {
+      window.electronAPI.minimizeWindow();
+    });
+  }
+
+  // Play/Pause button
+  const playPauseButton = document.getElementById('play-pause-button');
+  if (playPauseButton) {
+    playPauseButton.addEventListener('click', () => {
+      window.electronAPI.togglePlayPause();
+      // Toggle between play and pause icons
+      const img = playPauseButton.querySelector('img');
+      if (img) {
+        const currentSrc = img.src;
+        if (currentSrc.includes('play.svg')) {
+          img.src = './src/assets/icons/pause.svg';
+        } else {
+          img.src = './src/assets/icons/play.svg';
+        }
+      }
+    });
+  }
+
+  // Previous button
+  const prevButton = document.getElementById('prev-button');
+  if (prevButton) {
+    prevButton.addEventListener('click', () => {
+      window.electronAPI.skipPrevious();
+    });
+  }
+
+  // Next button
+  const nextButton = document.getElementById('next-button');
+  if (nextButton) {
+    nextButton.addEventListener('click', () => {
+      window.electronAPI.skipNext();
+    });
+  }
+
+  // Pin/Settings button
+  const pinButton = document.getElementById('pin-button');
+  if (pinButton) {
+    pinButton.addEventListener('click', () => {
+      window.electronAPI.togglePin();
+      // Toggle between pin and pinoff icons
+      const img = pinButton.querySelector('img');
+      if (img) {
+        const currentSrc = img.src;
+        if (currentSrc.includes('pin.svg')) {
+          img.src = './src/assets/icons/pinoff.svg';
+        } else {
+          img.src = './src/assets/icons/pin.svg';
+        }
+      }
+    });
+  }
+});

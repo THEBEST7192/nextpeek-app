@@ -1,4 +1,4 @@
-import { app, BrowserWindow } from 'electron';
+import { app, BrowserWindow, ipcMain } from 'electron';
 import path from 'node:path';
 import started from 'electron-squirrel-startup';
 
@@ -7,13 +7,18 @@ if (started) {
   app.quit();
 }
 
+let mainWindow;
+
 const createWindow = () => {
   // Create the browser window.
-  const mainWindow = new BrowserWindow({
+  mainWindow = new BrowserWindow({
     width: 800,
     height: 600,
+    frame: false,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
+      contextIsolation: true,
+      nodeIntegration: false,
     },
   });
 
@@ -54,3 +59,33 @@ app.on('window-all-closed', () => {
 
 // In this file you can include the rest of your app's specific main process
 // code. You can also put them in separate files and import them here.
+
+// Handle IPC events for window controls
+ipcMain.on('close-window', () => {
+  if (mainWindow) mainWindow.close();
+});
+
+ipcMain.on('minimize-window', () => {
+  if (mainWindow) mainWindow.minimize();
+});
+
+// These would be connected to your actual music player functionality
+ipcMain.on('toggle-play-pause', () => {
+  console.log('Play/Pause toggled');
+});
+
+ipcMain.on('skip-previous', () => {
+  console.log('Skip to previous track');
+});
+
+ipcMain.on('skip-next', () => {
+  console.log('Skip to next track');
+});
+
+ipcMain.on('toggle-pin', () => {
+  if (mainWindow) {
+    const isAlwaysOnTop = mainWindow.isAlwaysOnTop();
+    mainWindow.setAlwaysOnTop(!isAlwaysOnTop);
+    console.log(`Window pin ${!isAlwaysOnTop ? 'enabled' : 'disabled'}`);
+  }
+});
