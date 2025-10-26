@@ -4,7 +4,7 @@ body {
     sans-serif;
   margin: 0;
   padding: 0;
-  background-color: rgba(245, 245, 245, 0.1);
+  background-color: rgba(245, 245, 245, 0.8);
 }
 
 #titlebar {
@@ -103,6 +103,74 @@ body {
   max-width: 38rem;
   margin: auto;
   padding: 2rem;
+}
+
+/* Login Screen Styles */
+#login-screen {
+  text-align: center;
+  padding: 2rem 1rem;
+}
+
+#logo-container {
+  margin-bottom: 2rem;
+}
+
+#logo {
+  width: 80px;
+  height: 80px;
+  margin: 0 auto;
+  display: block;
+}
+
+#login-screen h1 {
+  font-size: 2rem;
+  font-weight: 700;
+  margin: 0 0 0.5rem 0;
+  color: #1db954; /* Spotify green */
+}
+
+#login-screen h2 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin: 0 0 1.5rem 0;
+  color: #191414; /* Spotify black */
+}
+
+#login-screen p {
+  font-size: 1rem;
+  line-height: 1.5;
+  margin: 0 0 1rem 0;
+  color: #535353;
+}
+
+#spotify-login-btn {
+  background-color: #1db954; /* Spotify green */
+  color: white;
+  border: none;
+  border-radius: 50px;
+  padding: 12px 24px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 1rem;
+  transition: background-color 0.2s ease;
+}
+
+#spotify-login-btn:hover {
+  background-color: #1ed760; /* Lighter Spotify green */
+}
+
+#spotify-login-btn:active {
+  background-color: #1aa34a; /* Darker Spotify green */
+}
+
+#spotify-login-btn img {
+  width: 20px;
+  height: 20px;
+  filter: invert(1); /* Make the play icon white */
 }
 
 @media (max-width: 100px) {

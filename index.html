@@ -2,7 +2,7 @@
 <html>
   <head>
     <meta charset="UTF-8" />
-    <title>Hello World!</title>
+    <title>NextPeek - Spotify Queue Manager</title>
     <link rel="stylesheet" href="./src/index.css">
   </head>
   <body>
@@ -34,8 +34,19 @@
       </div>
     </div>
     <div id="content">
-      <h1>💖 Hello World!</h1>
-      <p>Welcome to your Electron application.</p>
+      <div id="login-screen">
+        <div id="logo-container">
+          <img src="./src/assets/logo.svg" alt="NextPeek Logo" id="logo" />
+        </div>
+        <h1>Welcome to NextPeek!</h1>
+        <h2>Stop guessing. See what's coming.</h2>
+        <p>NextPeek gives you a clean, always-on window into your live Spotify queue, right on your desktop.</p>
+        <p>To get started, please log in with your Spotify account.</p>
+        <button id="spotify-login-btn">
+          <img src="./src/assets/Spotify_Primary_Logo_RGB_Black.png" alt="Spotify Logo" />
+          Log in with Spotify
+        </button>
+      </div>
     </div>
     <script type="module" src="/src/renderer.js"></script>
   </body>
