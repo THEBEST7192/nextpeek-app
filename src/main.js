@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain } from 'electron';
+import { app, BrowserWindow, ipcMain, screen } from 'electron';
 import path from 'node:path';
 import started from 'electron-squirrel-startup';
 
@@ -11,10 +11,17 @@ let mainWindow;
 
 const createWindow = () => {
   // Create the browser window.
+  const primaryDisplay = screen.getPrimaryDisplay();
+  const { width, height } = primaryDisplay.workAreaSize;
+
   mainWindow = new BrowserWindow({
-    width: 800,
-    height: 600,
+    width: Math.floor(width / 5),
+    height: height,
+    x: 0,
+    y: 0,
     frame: false,
+    transparent: true,
+    resizable: true,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
@@ -87,5 +94,61 @@ ipcMain.on('toggle-pin', () => {
     const isAlwaysOnTop = mainWindow.isAlwaysOnTop();
     mainWindow.setAlwaysOnTop(!isAlwaysOnTop);
     console.log(`Window pin ${!isAlwaysOnTop ? 'enabled' : 'disabled'}`);
+  }
+});
+
+ipcMain.on('snap-window', () => {
+  if (mainWindow) {
+    const currentBounds = mainWindow.getBounds();
+    const primaryDisplay = screen.getPrimaryDisplay();
+    const workArea = primaryDisplay.workArea;
+
+    const targetWidth = Math.floor(workArea.width / 5);
+    const targetHeight = workArea.height;
+
+    // Determine if currently snapped to left or right
+    const isSnappedLeft = currentBounds.x === workArea.x && currentBounds.width === targetWidth;
+    const isSnappedRight = currentBounds.x === workArea.x + workArea.width - targetWidth && currentBounds.width === targetWidth;
+
+    if (isSnappedLeft) {
+      // If snapped left, snap to right
+      mainWindow.setBounds({
+        x: workArea.x + workArea.width - targetWidth,
+        y: workArea.y,
+        width: targetWidth,
+        height: targetHeight,
+      });
+    } else if (isSnappedRight) {
+      // If snapped right, snap to left
+      mainWindow.setBounds({
+        x: workArea.x,
+        y: workArea.y,
+        width: targetWidth,
+        height: targetHeight,
+      });
+    } else {
+      // If not snapped, snap to the closest side
+      const centerOfScreen = workArea.x + workArea.width / 2;
+      const windowCenter = currentBounds.x + currentBounds.width / 2;
+
+      if (windowCenter < centerOfScreen) {
+        // Closer to left, snap left
+        mainWindow.setBounds({
+          x: workArea.x,
+          y: workArea.y,
+          width: targetWidth,
+          height: targetHeight,
+        });
+      } else {
+        // Closer to right, snap right
+        mainWindow.setBounds({
+          x: workArea.x + workArea.width - targetWidth,
+          y: workArea.y,
+          width: targetWidth,
+          height: targetHeight,
+        });
+      }
+    }
+    console.log('Window snapped');
   }
 });

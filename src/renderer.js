@@ -60,6 +60,14 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  // Snap button
+  const snapButton = document.getElementById('snap-button');
+  if (snapButton) {
+    snapButton.addEventListener('click', () => {
+      window.electronAPI.snapWindow();
+    });
+  }
+
   // Pin/Settings button
   const pinButton = document.getElementById('pin-button');
   if (pinButton) {

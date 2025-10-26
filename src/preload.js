@@ -9,5 +9,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
   togglePlayPause: () => ipcRenderer.send('toggle-play-pause'),
   skipPrevious: () => ipcRenderer.send('skip-previous'),
   skipNext: () => ipcRenderer.send('skip-next'),
-  togglePin: () => ipcRenderer.send('toggle-pin')
+  togglePin: () => ipcRenderer.send('toggle-pin'),
+  snapWindow: () => ipcRenderer.send('snap-window')
 });
