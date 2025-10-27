@@ -73,15 +73,14 @@ document.addEventListener('DOMContentLoaded', () => {
   if (pinButton) {
     pinButton.addEventListener('click', () => {
       window.electronAPI.togglePin();
-      // Toggle between pin and pinoff icons
+    });
+    
+    // Listen for pin state changes from main process
+    window.electronAPI.onPinStateChange((event, isPinned) => {
       const img = pinButton.querySelector('img');
       if (img) {
-        const currentSrc = img.src;
-        if (currentSrc.includes('pin.svg')) {
-          img.src = './src/assets/icons/pinoff.svg';
-        } else {
-          img.src = './src/assets/icons/pin.svg';
-        }
+        // Update icon based on actual pin state
+        img.src = isPinned ? './src/assets/icons/pin.svg' : './src/assets/icons/pinoff.svg';
       }
     });
   }
