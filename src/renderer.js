@@ -7,6 +7,61 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  // Spotify login button
+  const spotifyLoginBtn = document.getElementById('spotify-login-btn');
+  const loginScreen = document.getElementById('login-screen');
+  const spotifyLoginTextEl = document.getElementById('spotify-login-text');
+  if (spotifyLoginBtn && window.electronAPI) {
+    // Initialize status on load
+    if (window.electronAPI.getSpotifyAuthStatus) {
+      window.electronAPI.getSpotifyAuthStatus().then((status) => {
+        if (status && status.connected) {
+          // Hide login UI if already connected
+          if (loginScreen) {
+            loginScreen.style.display = 'none';
+          }
+        }
+      }).catch(() => {
+        // ignore init errors
+      });
+    }
+
+    // Start OAuth login on click
+    spotifyLoginBtn.addEventListener('click', () => {
+      if (window.electronAPI.startSpotifyAuth) {
+        window.electronAPI.startSpotifyAuth();
+        // Provide immediate feedback
+        spotifyLoginBtn.disabled = true;
+        if (spotifyLoginTextEl) {
+          spotifyLoginTextEl.textContent = 'Opening Spotify…';
+        }
+      }
+    });
+
+    // Handle success
+    if (window.electronAPI.onSpotifyAuthSuccess) {
+      window.electronAPI.onSpotifyAuthSuccess(() => {
+        if (loginScreen) {
+          loginScreen.style.display = 'none';
+        }
+      });
+    }
+
+    // Handle error
+    if (window.electronAPI.onSpotifyAuthError) {
+      window.electronAPI.onSpotifyAuthError((event, message) => {
+        // Restore button state and show error
+        spotifyLoginBtn.disabled = false;
+        if (spotifyLoginTextEl) {
+          spotifyLoginTextEl.textContent = 'Log in with Spotify';
+        }
+        if (message) {
+          alert(`Spotify auth failed: ${message}`);
+        }
+      });
+  }
+  }
+
   // Minimize button
   const minimizeButton = document.getElementById('minimize-button');
   if (minimizeButton) {

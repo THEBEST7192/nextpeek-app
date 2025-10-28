@@ -1,6 +1,11 @@
-import { app, BrowserWindow, ipcMain, screen } from 'electron';
+import { app, BrowserWindow, ipcMain, screen, shell } from 'electron';
 import path from 'node:path';
 import started from 'electron-squirrel-startup';
+import crypto from 'node:crypto';
+import dotenv from 'dotenv';
+import http from 'node:http';
+
+dotenv.config();
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (started) {
@@ -19,6 +24,112 @@ const SHOW_DELAY = 200; // ms delay before showing sidebar
 let isPinned = true; // Track pin state - Start with pin on
 let isPlaying = false; // Track play state - Start with paused
 let currentSide = 'left'; // Track which side the sidebar is docked on
+let spotifyAuthServer = null;
+let spotifyAccessToken = null;
+let spotifyRefreshToken = null;
+let spotifyCodeVerifier = null;
+const SPOTIFY_CLIENT_ID = process.env.SPOTIFY_CLIENT_ID || '';
+const SPOTIFY_REDIRECT_URI = 'http://127.0.0.1:7192';
+const SPOTIFY_SCOPES = [
+  'user-read-playback-state',
+  'user-modify-playback-state',
+  'user-read-currently-playing'
+].join(' ');
+
+const toBase64Url = (buffer) => buffer.toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+const generateCodeVerifier = () => toBase64Url(crypto.randomBytes(64));
+const generateCodeChallenge = (verifier) => toBase64Url(crypto.createHash('sha256').update(verifier).digest());
+
+const startSpotifyAuthServer = () => {
+  if (spotifyAuthServer) return;
+  spotifyAuthServer = http.createServer(async (req, res) => {
+    try {
+      console.log('Incoming request URL:', req.url);
+      const url = new URL(req.url, 'http://127.0.0.1:7192');
+      console.log('Parsed URL pathname:', url.pathname);
+      if (url.pathname === '/') {
+        const code = url.searchParams.get('code');
+        const error = url.searchParams.get('error');
+        if (error) {
+          mainWindow?.webContents.send('spotify-auth-error', error);
+          res.writeHead(400, { 'Content-Type': 'text/plain' });
+          res.end('Spotify auth error: ' + error);
+        } else if (code) {
+          // Exchange code for token using PKCE
+          const params = new URLSearchParams({
+            grant_type: 'authorization_code',
+            code,
+            redirect_uri: SPOTIFY_REDIRECT_URI,
+            client_id: SPOTIFY_CLIENT_ID,
+            code_verifier: spotifyCodeVerifier || ''
+          });
+          const r = await fetch('https://accounts.spotify.com/api/token', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: params.toString()
+          });
+          if (!r.ok) {
+            const msg = await r.text();
+            mainWindow?.webContents.send('spotify-auth-error', msg);
+            res.writeHead(500, { 'Content-Type': 'text/plain' });
+            res.end('Token exchange failed');
+          } else {
+            const data = await r.json();
+            spotifyAccessToken = data.access_token;
+            spotifyRefreshToken = data.refresh_token || null;
+            mainWindow?.webContents.send('spotify-auth-success', {
+              accessToken: !!spotifyAccessToken,
+              refreshToken: !!spotifyRefreshToken
+            });
+            res.writeHead(200, { 'Content-Type': 'text/plain' });
+            res.end('Spotify authentication complete. You can close this tab.');
+          }
+        } else {
+          res.writeHead(400, { 'Content-Type': 'text/plain' });
+          res.end('Missing code parameter');
+        }
+        // Close server after handling callback
+        setTimeout(() => {
+          try { spotifyAuthServer?.close(); } catch {}
+          spotifyAuthServer = null;
+        }, 500);
+      } else {
+        res.writeHead(404, { 'Content-Type': 'text/plain' });
+        res.end('Not found');
+      }
+    } catch (e) {
+      mainWindow?.webContents.send('spotify-auth-error', String(e));
+      res.writeHead(500, { 'Content-Type': 'text/plain' });
+      res.end('Internal error');
+    }
+  });
+  spotifyAuthServer.listen(7192, '127.0.0.1');
+};
+
+const startSpotifyLogin = () => {
+  if (!SPOTIFY_CLIENT_ID) {
+    mainWindow?.webContents.send('spotify-auth-error', 'Missing SPOTIFY_CLIENT_ID in env');
+    return;
+  }
+  // Start callback server
+  startSpotifyAuthServer();
+  // Generate PKCE values
+  spotifyCodeVerifier = generateCodeVerifier();
+  const codeChallenge = generateCodeChallenge(spotifyCodeVerifier);
+  const state = toBase64Url(crypto.randomBytes(16));
+  const authParams = new URLSearchParams({
+    response_type: 'code',
+    client_id: SPOTIFY_CLIENT_ID,
+    redirect_uri: SPOTIFY_REDIRECT_URI,
+    scope: SPOTIFY_SCOPES,
+    code_challenge_method: 'S256',
+    code_challenge: codeChallenge,
+    state
+  });
+  const authUrl = 'https://accounts.spotify.com/authorize?' + authParams.toString();
+  // Open in external browser
+  shell.openExternal(authUrl);
+};
 const TRIGGER_ZONE_WIDTH = 5; // 5px trigger zone on screen edges
 const ANIMATION_DURATION = 300; // ms for slide animation
 const HIDE_DELAY = 500; // ms delay before hiding sidebar
@@ -467,6 +578,11 @@ app.whenReady().then(() => {
 // for applications and their menu bar to stay active until the user quits
 // explicitly with Cmd + Q.
 app.on('window-all-closed', () => {
+  if (spotifyAuthServer) {
+    spotifyAuthServer.close(() => {
+      console.log('Spotify auth server closed.');
+    });
+  }
   if (process.platform !== 'darwin') {
     app.quit();
   }
@@ -560,4 +676,17 @@ ipcMain.on('snap-window', () => {
     }
     console.log('Window snapped');
   }
+});
+
+// Spotify OAuth IPC
+ipcMain.on('spotify-login', () => {
+  try {
+    startSpotifyLogin();
+  } catch (e) {
+    mainWindow?.webContents.send('spotify-auth-error', String(e));
+  }
+});
+
+ipcMain.handle('spotify-auth-status', async () => {
+  return { connected: !!spotifyAccessToken };
 });
