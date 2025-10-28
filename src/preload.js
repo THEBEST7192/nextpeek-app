@@ -12,5 +12,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   togglePin: () => ipcRenderer.send('toggle-pin'),
   snapWindow: () => ipcRenderer.send('snap-window'),
   onPinStateChange: (callback) => ipcRenderer.on('pin-state-changed', callback),
-  removePinStateListener: () => ipcRenderer.removeAllListeners('pin-state-changed')
+  removePinStateListener: () => ipcRenderer.removeAllListeners('pin-state-changed'),
+  onPlayStateChange: (callback) => ipcRenderer.on('play-state-changed', callback),
+  removePlayStateListener: () => ipcRenderer.removeAllListeners('play-state-changed')
 });

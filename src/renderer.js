@@ -1,14 +1,3 @@
-/**
- * This file will automatically be loaded by vite and run in the "renderer" context.
- * To learn more about the differences between the "main" and the "renderer" context in
- * Electron, visit:
- *
- * https://electronjs.org/docs/tutorial/process-model
- */
-
-import './index.css';
-
-// Initialize titlebar controls
 document.addEventListener('DOMContentLoaded', () => {
   // Close button
   const closeButton = document.getElementById('close-button');
@@ -31,31 +20,32 @@ document.addEventListener('DOMContentLoaded', () => {
   if (playPauseButton) {
     playPauseButton.addEventListener('click', () => {
       window.electronAPI.togglePlayPause();
-      // Toggle between play and pause icons
-      const img = playPauseButton.querySelector('img');
-      if (img) {
-        const currentSrc = img.src;
-        if (currentSrc.includes('play.svg')) {
-          img.src = './src/assets/icons/pause.svg';
-        } else {
-          img.src = './src/assets/icons/play.svg';
-        }
-      }
     });
+    
+    // Listen for play state changes from main process
+    if (window.electronAPI && window.electronAPI.onPlayStateChange) {
+      window.electronAPI.onPlayStateChange((event, isPlaying) => {
+        const img = playPauseButton.querySelector('img');
+        if (img) {
+          // Update icon based on actual play state
+          img.src = isPlaying ? './src/assets/icons/pause.svg' : './src/assets/icons/play.svg';
+        }
+      });
+    }
   }
 
-  // Previous button
-  const prevButton = document.getElementById('prev-button');
-  if (prevButton) {
-    prevButton.addEventListener('click', () => {
+  // Skip previous button
+  const skipPreviousButton = document.getElementById('skip-previous-button');
+  if (skipPreviousButton) {
+    skipPreviousButton.addEventListener('click', () => {
       window.electronAPI.skipPrevious();
     });
   }
 
-  // Next button
-  const nextButton = document.getElementById('next-button');
-  if (nextButton) {
-    nextButton.addEventListener('click', () => {
+  // Skip next button
+  const skipNextButton = document.getElementById('skip-next-button');
+  if (skipNextButton) {
+    skipNextButton.addEventListener('click', () => {
       window.electronAPI.skipNext();
     });
   }
@@ -76,12 +66,14 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     
     // Listen for pin state changes from main process
-    window.electronAPI.onPinStateChange((event, isPinned) => {
-      const img = pinButton.querySelector('img');
-      if (img) {
-        // Update icon based on actual pin state
-        img.src = isPinned ? './src/assets/icons/pin.svg' : './src/assets/icons/pinoff.svg';
-      }
-    });
+    if (window.electronAPI && window.electronAPI.onPinStateChange) {
+      window.electronAPI.onPinStateChange((event, isPinned) => {
+        const img = pinButton.querySelector('img');
+        if (img) {
+          // Update icon based on actual pin state
+          img.src = isPinned ? './src/assets/icons/pin.svg' : './src/assets/icons/pinoff.svg';
+        }
+      });
+    }
   }
 });

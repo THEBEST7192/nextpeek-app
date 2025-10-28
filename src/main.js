@@ -17,6 +17,7 @@ const SHOW_COOLDOWN = 500; // ms cooldown before showing again
 let showDelayTimeout = null; // Delay before showing sidebar
 const SHOW_DELAY = 200; // ms delay before showing sidebar
 let isPinned = true; // Track pin state - Start with pin on
+let isPlaying = false; // Track play state - Start with paused
 const TRIGGER_ZONE_WIDTH = 5; // 5px trigger zone on screen edges
 const ANIMATION_DURATION = 300; // ms for slide animation
 const HIDE_DELAY = 500; // ms delay before hiding sidebar
@@ -41,6 +42,18 @@ const createWindow = () => {
       nodeIntegration: false,
     },
     show: false, // Don't show until ready
+  });
+
+  // Use the highest level for always-on-top to work with fullscreen applications
+  mainWindow.setAlwaysOnTop(true, 'screen-saver');
+  mainWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
+  
+  // For Windows, set the window to be a tool window which helps with fullscreen apps
+  mainWindow.setSkipTaskbar(true);
+  
+  // Send initial play state to renderer
+  mainWindow.webContents.on('did-finish-load', () => {
+    mainWindow.webContents.send('play-state-changed', isPlaying);
   });
 
   // and load the index.html of the app.
@@ -266,7 +279,7 @@ const togglePin = () => {
   // Store current state before changing
   const wasPinned = isPinned;
   isPinned = !isPinned;
-  mainWindow.setAlwaysOnTop(isPinned);
+  mainWindow.setAlwaysOnTop(true); // Always keep window on top
   
   // If pinning, ensure window is visible and on screen
   if (isPinned) {
@@ -464,6 +477,10 @@ ipcMain.on('toggle-pin', () => {
 // These would be connected to your actual music player functionality
 ipcMain.on('toggle-play-pause', () => {
   console.log('Play/Pause toggled');
+  isPlaying = !isPlaying;
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.webContents.send('play-state-changed', isPlaying);
+  }
 });
 
 ipcMain.on('skip-previous', () => {
