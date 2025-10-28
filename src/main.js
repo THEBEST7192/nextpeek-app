@@ -18,6 +18,7 @@ let showDelayTimeout = null; // Delay before showing sidebar
 const SHOW_DELAY = 200; // ms delay before showing sidebar
 let isPinned = true; // Track pin state - Start with pin on
 let isPlaying = false; // Track play state - Start with paused
+let currentSide = 'left'; // Track which side the sidebar is docked on
 const TRIGGER_ZONE_WIDTH = 5; // 5px trigger zone on screen edges
 const ANIMATION_DURATION = 300; // ms for slide animation
 const HIDE_DELAY = 500; // ms delay before hiding sidebar
@@ -107,23 +108,35 @@ const startMouseTracking = () => {
     const primaryDisplay = screen.getPrimaryDisplay();
     const workArea = primaryDisplay.workArea;
     const windowBounds = mainWindow.getBounds();
+    const targetWidth = Math.floor(workArea.width / 5);
+
+    // Detect which edge the window is currently docked to and update currentSide
+    const isOnLeftEdge = Math.abs(windowBounds.x - workArea.x) < 5;
+    const isOnRightEdge = Math.abs(windowBounds.x - (workArea.x + workArea.width - targetWidth)) < 5;
+    if (!isPinned && (isOnLeftEdge || isOnRightEdge)) {
+      currentSide = isOnLeftEdge ? 'left' : 'right';
+    }
 
     // Check if cursor is in trigger zones
     // When pinned, we don't need trigger zones as the window is always visible
     // When not pinned, use screen edges for trigger zones
-    const isInLeftTrigger = !isPinned && 
-                           cursorPos.x <= workArea.x + TRIGGER_ZONE_WIDTH && 
-                           cursorPos.y >= workArea.y && 
+    const isInLeftTrigger = !isPinned &&
+                           cursorPos.x <= workArea.x + TRIGGER_ZONE_WIDTH &&
+                           cursorPos.y >= workArea.y &&
                            cursorPos.y <= workArea.y + workArea.height;
 
-    const isInRightTrigger = !isPinned && 
-                            cursorPos.x >= workArea.x + workArea.width - TRIGGER_ZONE_WIDTH && 
-                            cursorPos.y >= workArea.y && 
+    const isInRightTrigger = !isPinned &&
+                            cursorPos.x >= workArea.x + workArea.width - TRIGGER_ZONE_WIDTH &&
+                            cursorPos.y >= workArea.y &&
                             cursorPos.y <= workArea.y + workArea.height;
+
+    // Only allow trigger on the same side the window is docked to
+    const shouldTriggerLeft = currentSide === 'left' && isInLeftTrigger;
+    const shouldTriggerRight = currentSide === 'right' && isInRightTrigger;
                             
     // Debug output for trigger zones
-    if (isInLeftTrigger || isInRightTrigger) {
-      console.log(`Cursor in trigger zone: Left=${isInLeftTrigger}, Right=${isInRightTrigger}, isPinned=${isPinned}`);
+    if (shouldTriggerLeft || shouldTriggerRight) {
+      console.log(`Cursor in trigger zone for current side: side=${currentSide}, Left=${isInLeftTrigger}, Right=${isInRightTrigger}, isPinned=${isPinned}`);
     }
 
     // Check if cursor is in sidebar area when visible
@@ -132,33 +145,33 @@ const startMouseTracking = () => {
                        cursorPos.y >= windowBounds.y && 
                        cursorPos.y <= windowBounds.y + windowBounds.height;
 
-    if (isInLeftTrigger && !isSidebarVisible && !isAnimating && !showDelayTimeout) {
+    if (shouldTriggerLeft && !isSidebarVisible && !isAnimating && !showDelayTimeout) {
           // Left edge - show sidebar with delay
           console.log('Showing sidebar on LEFT side');
           showDelayTimeout = setTimeout(() => {
             showSidebar('left');
             showDelayTimeout = null;
           }, SHOW_DELAY);
-        } else if (isInRightTrigger && !isSidebarVisible && !isAnimating && !showDelayTimeout) {
+        } else if (shouldTriggerRight && !isSidebarVisible && !isAnimating && !showDelayTimeout) {
           // Right edge - show sidebar with delay
           console.log('Showing sidebar on RIGHT side');
           showDelayTimeout = setTimeout(() => {
             showSidebar('right');
             showDelayTimeout = null;
           }, SHOW_DELAY);
-        } else if (isInLeftTrigger && isSidebarVisible) {
+        } else if (shouldTriggerLeft && isSidebarVisible) {
           // Already visible on left - clear any pending hide timeout
           if (hideTimeout) {
             clearTimeout(hideTimeout);
             hideTimeout = null;
           }
-        } else if (isInRightTrigger && isSidebarVisible) {
+        } else if (shouldTriggerRight && isSidebarVisible) {
           // Already visible on right - clear any pending hide timeout
           if (hideTimeout) {
             clearTimeout(hideTimeout);
             hideTimeout = null;
           }
-        } else if (!isInLeftTrigger && !isInRightTrigger) {
+        } else if (!shouldTriggerLeft && !shouldTriggerRight) {
       // Mouse is not in trigger zone - clear any pending show delay
       if (showDelayTimeout) {
         clearTimeout(showDelayTimeout);
@@ -188,6 +201,8 @@ const showSidebar = (side = 'left') => {
   lastShowTime = currentTime;
   
   console.log(`showSidebar called with side: ${side}`);
+  // Persist the side so hover triggers only respond to the same edge
+  currentSide = side;
 
   const primaryDisplay = screen.getPrimaryDisplay();
   const workArea = primaryDisplay.workArea;
