@@ -455,55 +455,35 @@ const togglePin = () => {
     if (!activeDisplay) return;
     const workArea = activeDisplay.workArea;
     const currentBounds = mainWindow.getBounds();
-  
-    const windowWidth = currentBounds.width;
-    const windowHeight = currentBounds.height;
-  
-    // Calculate the four corners of the work area, adjusted for window size
-    const topLeft = { x: workArea.x, y: workArea.y };
-    const topRight = { x: workArea.x + workArea.width - windowWidth, y: workArea.y };
-    const bottomLeft = { x: workArea.x, y: workArea.y + workArea.height - windowHeight };
-    const bottomRight = { x: workArea.x + workArea.width - windowWidth, y: workArea.y + workArea.height - windowHeight };
-  
-    const corners = [topLeft, topRight, bottomLeft, bottomRight];
-  
-    let closestCorner = corners[0];
-    let minDistance = Infinity;
-  
-    // Find the closest corner
-    for (const corner of corners) {
-      const dist = Math.sqrt(
-        Math.pow(currentBounds.x - corner.x, 2) +
-        Math.pow(currentBounds.y - corner.y, 2)
-      );
-      if (dist < minDistance) {
-        minDistance = dist;
-        closestCorner = corner;
-      }
+    const targetWidth = Math.floor(workArea.width / 5);
+    
+    // Determine which side is closer (left or right)
+    const distToLeft = Math.abs(currentBounds.x - workArea.x);
+    const distToRight = Math.abs((currentBounds.x + currentBounds.width) - (workArea.x + workArea.width));
+    
+    // Snap to the closest edge, similar to pinning behavior
+    let newX;
+    if (distToLeft <= distToRight) {
+      // Snap to left edge
+      newX = workArea.x;
+      currentSide = 'left';
+    } else {
+      // Snap to right edge
+      newX = workArea.x + workArea.width - targetWidth;
+      currentSide = 'right';
     }
-  
-    // Move the window to the closest corner
+    
+    // Move the window to the edge
     mainWindow.setBounds({
-      x: closestCorner.x,
-      y: closestCorner.y,
-      width: windowWidth,
-      height: windowHeight
+      x: newX,
+      y: workArea.y,
+      width: targetWidth,
+      height: workArea.height
     });
     
-    console.log(`Window unpinned and moved to corner: (${closestCorner.x}, ${closestCorner.y})`);
-
-    // Update side based on final position so hover triggers align
-    const rightEdgeX = workArea.x + workArea.width - windowWidth;
-    if (Math.abs(closestCorner.x - workArea.x) < 5) {
-      currentSide = 'left';
-    } else if (Math.abs(closestCorner.x - rightEdgeX) < 5) {
-      currentSide = 'right';
-    } else {
-      // If at a corner not aligned to left/right, choose nearest edge
-      const distLeft = Math.abs(closestCorner.x - workArea.x);
-      const distRight = Math.abs(closestCorner.x - rightEdgeX);
-      currentSide = distLeft <= distRight ? 'left' : 'right';
-    }
+    console.log(`Window unpinned and snapped to ${currentSide} edge: (${newX}, ${workArea.y})`);
+    
+    // No need to update currentSide as we've already set it above
   }
   
   // Send pin state to renderer
@@ -608,11 +588,39 @@ const hideSidebar = () => {
   setTimeout(animateStep, animationStep);
 };
 
+// Function to initialize window size and position
+const initializeWindowSize = () => {
+  if (!mainWindow || mainWindow.isDestroyed()) return;
+  
+  const activeDisplay = getDisplayForWindow();
+  if (!activeDisplay) return;
+  
+  const workArea = activeDisplay.workArea;
+  const targetWidth = Math.floor(workArea.width / 5);
+  
+  // Set the window to the correct size and position based on current side
+  const targetX = currentSide === 'left' ? workArea.x : workArea.x + workArea.width - targetWidth;
+  
+  mainWindow.setBounds({
+    x: targetX,
+    y: workArea.y,
+    width: targetWidth,
+    height: workArea.height
+  });
+  
+  console.log(`Window initialized: side=${currentSide}, position=(${targetX}, ${workArea.y}), size=${targetWidth}x${workArea.height}`);
+};
+
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
 app.whenReady().then(() => {
   createWindow();
+
+  // Initialize window size and position after creation
+  setTimeout(() => {
+    initializeWindowSize();
+  }, 100); // Small delay to ensure window is fully created
 
   // Start mouse tracking for sidebar functionality
   startMouseTracking();
@@ -622,6 +630,9 @@ app.whenReady().then(() => {
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {
       createWindow();
+      setTimeout(() => {
+        initializeWindowSize();
+      }, 100);
       startMouseTracking();
     }
   });
