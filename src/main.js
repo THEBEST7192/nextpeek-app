@@ -36,6 +36,13 @@ const SPOTIFY_SCOPES = [
   'user-read-currently-playing'
 ].join(' ');
 
+// Helper: get the display that the window currently occupies
+const getDisplayForWindow = () => {
+  if (!mainWindow) return null;
+  const bounds = mainWindow.getBounds();
+  return screen.getDisplayMatching(bounds);
+};
+
 const toBase64Url = (buffer) => buffer.toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 const generateCodeVerifier = () => toBase64Url(crypto.randomBytes(64));
 const generateCodeChallenge = (verifier) => toBase64Url(crypto.createHash('sha256').update(verifier).digest());
@@ -136,14 +143,15 @@ const HIDE_DELAY = 500; // ms delay before hiding sidebar
 
 const createWindow = () => {
   // Create the browser window.
-  const primaryDisplay = screen.getPrimaryDisplay();
-  const targetWidth = Math.floor(primaryDisplay.workArea.width / 5);
+  const initialDisplay = screen.getDisplayNearestPoint(screen.getCursorScreenPoint());
+  const workArea = initialDisplay.workArea;
+  const targetWidth = Math.floor(workArea.width / 5);
   
   mainWindow = new BrowserWindow({
     width: targetWidth,
-    height: primaryDisplay.workArea.height,
-    x: primaryDisplay.workArea.x,
-    y: primaryDisplay.workArea.y,
+    height: workArea.height,
+    x: workArea.x,
+    y: workArea.y,
     frame: false,
     transparent: true,
     resizable: true,
@@ -216,34 +224,39 @@ const startMouseTracking = () => {
     if (!mainWindow || mainWindow.isDestroyed()) return;
 
     const cursorPos = screen.getCursorScreenPoint();
-    const primaryDisplay = screen.getPrimaryDisplay();
-    const workArea = primaryDisplay.workArea;
+    const activeWindowDisplay = getDisplayForWindow();
+    if (!activeWindowDisplay) return; // enforce window's display only
+    const workAreaForWindow = activeWindowDisplay.workArea;
     const windowBounds = mainWindow.getBounds();
-    const targetWidth = Math.floor(workArea.width / 5);
+    const targetWidth = Math.floor(workAreaForWindow.width / 5);
 
     // Detect which edge the window is currently docked to and update currentSide
-    const isOnLeftEdge = Math.abs(windowBounds.x - workArea.x) < 5;
-    const isOnRightEdge = Math.abs(windowBounds.x - (workArea.x + workArea.width - targetWidth)) < 5;
-    if (!isPinned && (isOnLeftEdge || isOnRightEdge)) {
+    const isOnLeftEdge = Math.abs(windowBounds.x - workAreaForWindow.x) < 5;
+    const isOnRightEdge = Math.abs(windowBounds.x - (workAreaForWindow.x + workAreaForWindow.width - targetWidth)) < 5;
+    // Always keep currentSide in sync with actual docking, even when pinned
+    if (isOnLeftEdge || isOnRightEdge) {
       currentSide = isOnLeftEdge ? 'left' : 'right';
     }
 
     // Check if cursor is in trigger zones
     // When pinned, we don't need trigger zones as the window is always visible
     // When not pinned, use screen edges for trigger zones
-    const isInLeftTrigger = !isPinned &&
-                           cursorPos.x <= workArea.x + TRIGGER_ZONE_WIDTH &&
-                           cursorPos.y >= workArea.y &&
-                           cursorPos.y <= workArea.y + workArea.height;
+    const cursorDisplay = screen.getDisplayNearestPoint(cursorPos);
+    const cursorWorkArea = cursorDisplay.workArea;
+    const sameDisplay = cursorDisplay.id === activeWindowDisplay.id;
+    const isInLeftTrigger = !isPinned && sameDisplay &&
+                           cursorPos.x <= cursorWorkArea.x + TRIGGER_ZONE_WIDTH &&
+                           cursorPos.y >= cursorWorkArea.y &&
+                           cursorPos.y <= cursorWorkArea.y + cursorWorkArea.height;
 
-    const isInRightTrigger = !isPinned &&
-                            cursorPos.x >= workArea.x + workArea.width - TRIGGER_ZONE_WIDTH &&
-                            cursorPos.y >= workArea.y &&
-                            cursorPos.y <= workArea.y + workArea.height;
+    const isInRightTrigger = !isPinned && sameDisplay &&
+                            cursorPos.x >= cursorWorkArea.x + cursorWorkArea.width - TRIGGER_ZONE_WIDTH &&
+                            cursorPos.y >= cursorWorkArea.y &&
+                            cursorPos.y <= cursorWorkArea.y + cursorWorkArea.height;
 
     // Only allow trigger on the same side the window is docked to
-    const shouldTriggerLeft = currentSide === 'left' && isInLeftTrigger;
-    const shouldTriggerRight = currentSide === 'right' && isInRightTrigger;
+    const shouldTriggerLeft = !isPinned && currentSide === 'left' && isInLeftTrigger;
+    const shouldTriggerRight = !isPinned && currentSide === 'right' && isInRightTrigger;
                             
     // Debug output for trigger zones
     if (shouldTriggerLeft || shouldTriggerRight) {
@@ -315,8 +328,9 @@ const showSidebar = (side = 'left') => {
   // Persist the side so hover triggers only respond to the same edge
   currentSide = side;
 
-  const primaryDisplay = screen.getPrimaryDisplay();
-  const workArea = primaryDisplay.workArea;
+  const activeDisplay = getDisplayForWindow();
+  if (!activeDisplay) return; // window not ready
+  const workArea = activeDisplay.workArea;
   const targetWidth = Math.floor(workArea.width / 5);
 
   // Clear any pending hide timeout
@@ -346,8 +360,9 @@ const showSidebar = (side = 'left') => {
   // Force focus to ensure animation works properly
   mainWindow.focus();
 
-  // Set initial position off-screen
-  const startX = side === 'left' ? -targetWidth : workArea.x + workArea.width;
+  // Set initial position off-screen but within the same display
+  // Instead of moving completely off-screen, we'll keep a small portion visible
+  const startX = side === 'left' ? workArea.x - targetWidth + 5 : workArea.x + workArea.width - 5;
   console.log(`Animation starting: side=${side}, startX=${startX}, targetX=${targetX}`);
   
   // Force window to be visible before animation
@@ -424,19 +439,21 @@ const togglePin = () => {
     
     // Get current bounds to maintain position when pinning
     const currentBounds = mainWindow.getBounds();
-    const primaryDisplay = screen.getPrimaryDisplay();
-    const targetWidth = Math.floor(primaryDisplay.workArea.width / 5);
+    const activeDisplay = getDisplayForWindow();
+    if (!activeDisplay) return;
+    const targetWidth = Math.floor(activeDisplay.workArea.width / 5);
     
     // Keep the same position but adjust width/height
     mainWindow.setBounds({
       x: currentBounds.x,
       y: currentBounds.y,
       width: targetWidth,
-      height: primaryDisplay.workArea.height
+      height: activeDisplay.workArea.height
     });
   } else { // When unpinning
-    const primaryDisplay = screen.getPrimaryDisplay();
-    const workArea = primaryDisplay.workArea;
+    const activeDisplay = getDisplayForWindow();
+    if (!activeDisplay) return;
+    const workArea = activeDisplay.workArea;
     const currentBounds = mainWindow.getBounds();
   
     const windowWidth = currentBounds.width;
@@ -474,6 +491,19 @@ const togglePin = () => {
     });
     
     console.log(`Window unpinned and moved to corner: (${closestCorner.x}, ${closestCorner.y})`);
+
+    // Update side based on final position so hover triggers align
+    const rightEdgeX = workArea.x + workArea.width - windowWidth;
+    if (Math.abs(closestCorner.x - workArea.x) < 5) {
+      currentSide = 'left';
+    } else if (Math.abs(closestCorner.x - rightEdgeX) < 5) {
+      currentSide = 'right';
+    } else {
+      // If at a corner not aligned to left/right, choose nearest edge
+      const distLeft = Math.abs(closestCorner.x - workArea.x);
+      const distRight = Math.abs(closestCorner.x - rightEdgeX);
+      currentSide = distLeft <= distRight ? 'left' : 'right';
+    }
   }
   
   // Send pin state to renderer
@@ -493,8 +523,9 @@ const hideSidebar = () => {
     showDelayTimeout = null;
   }
 
-  const primaryDisplay = screen.getPrimaryDisplay();
-  const workArea = primaryDisplay.workArea;
+  const activeDisplay = getDisplayForWindow();
+  if (!activeDisplay) return; // window not ready
+  const workArea = activeDisplay.workArea;
   const windowBounds = mainWindow.getBounds();
   const targetWidth = Math.floor(workArea.width / 5);
 
@@ -510,12 +541,34 @@ const hideSidebar = () => {
     return;
   }
 
+  // Check for adjacent monitors on the current edge to prevent cross-monitor animation
+  const allDisplays = screen.getAllDisplays();
+  let hasAdjacentMonitor = false;
+
+  if (isOnLeft) {
+    hasAdjacentMonitor = allDisplays.some(display => 
+      display.id !== activeDisplay.id && 
+      display.workArea.x + display.workArea.width === activeDisplay.workArea.x
+    );
+  } else if (isOnRight) {
+    hasAdjacentMonitor = allDisplays.some(display => 
+      display.id !== activeDisplay.id && 
+      display.workArea.x === activeDisplay.workArea.x + activeDisplay.workArea.width
+    );
+  }
+
+  if (hasAdjacentMonitor) {
+    console.log(`Adjacent monitor found on ${isOnLeft ? 'left' : 'right'} edge, canceling hide animation`);
+    return;
+  }
+
   // Disable mouse events during hide animation
   mainWindow.setIgnoreMouseEvents(true, { forward: true });
 
   // Calculate animation parameters
   const startX = windowBounds.x;
-  const targetX = isOnLeft ? -targetWidth : workArea.x + workArea.width;
+  // Keep a small portion visible to prevent moving to adjacent monitors
+  const targetX = isOnLeft ? workArea.x - targetWidth + 5 : workArea.x + workArea.width - 5;
   
   console.log(`Hide animation: isOnLeft=${isOnLeft}, isOnRight=${isOnRight}, startX=${startX}, targetX=${targetX}`);
   
@@ -625,8 +678,8 @@ ipcMain.on('skip-next', () => {
 ipcMain.on('snap-window', () => {
   if (mainWindow) {
     const currentBounds = mainWindow.getBounds();
-    const primaryDisplay = screen.getPrimaryDisplay();
-    const workArea = primaryDisplay.workArea;
+    const activeDisplay = getDisplayForWindow();
+    const workArea = activeDisplay.workArea;
 
     const targetWidth = Math.floor(workArea.width / 5);
     const targetHeight = workArea.height;
