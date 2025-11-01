@@ -85,8 +85,8 @@ const startSpotifyAuthServer = () => {
             spotifyAccessToken = data.access_token;
             spotifyRefreshToken = data.refresh_token || null;
             mainWindow?.webContents.send('spotify-auth-success', {
-              accessToken: !!spotifyAccessToken,
-              refreshToken: !!spotifyRefreshToken
+              accessToken: spotifyAccessToken,
+              refreshToken: spotifyRefreshToken
             });
             res.writeHead(200, { 'Content-Type': 'text/plain' });
             res.end('Spotify authentication complete. You can close this tab.');
@@ -752,5 +752,5 @@ ipcMain.on('spotify-login', () => {
 });
 
 ipcMain.handle('spotify-auth-status', async () => {
-  return { connected: !!spotifyAccessToken };
+  return { accessToken: spotifyAccessToken, refreshToken: spotifyRefreshToken };
 });

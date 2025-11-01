@@ -1,3 +1,7 @@
+import React from 'react';
+import ReactDOM from 'react-dom/client';
+import NowPlaying from './components/NowPlaying.jsx';
+
 document.addEventListener('DOMContentLoaded', () => {
   // Close button
   const closeButton = document.getElementById('close-button');
@@ -11,18 +15,45 @@ document.addEventListener('DOMContentLoaded', () => {
   const spotifyLoginBtn = document.getElementById('spotify-login-btn');
   const loginScreen = document.getElementById('login-screen');
   const spotifyLoginTextEl = document.getElementById('spotify-login-text');
+  const rootElement = document.getElementById('root');
+  const root = ReactDOM.createRoot(rootElement);
+
+  const renderApp = async (accessToken) => {
+    if (rootElement) {
+      document.body.classList.add('logged-in'); // Add class when logged in
+      root.render(
+        <React.StrictMode>
+          <NowPlaying accessToken={accessToken} />
+        </React.StrictMode>
+      );
+    }
+  };
+
+  const hideLoginScreen = () => {
+    if (loginScreen) {
+      loginScreen.style.display = 'none';
+    }
+  };
+
+  const showLoginScreen = () => {
+    if (loginScreen) {
+      document.body.classList.remove('logged-in'); // Remove class when not logged in
+      loginScreen.style.display = 'block';
+    }
+  };
+
   if (spotifyLoginBtn && window.electronAPI) {
     // Initialize status on load
     if (window.electronAPI.getSpotifyAuthStatus) {
       window.electronAPI.getSpotifyAuthStatus().then((status) => {
-        if (status && status.connected) {
-          // Hide login UI if already connected
-          if (loginScreen) {
-            loginScreen.style.display = 'none';
-          }
+        if (status && status.accessToken) {
+          hideLoginScreen();
+          renderApp(status.accessToken);
+        } else {
+          showLoginScreen();
         }
       }).catch(() => {
-        // ignore init errors
+        showLoginScreen();
       });
     }
 
@@ -40,10 +71,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Handle success
     if (window.electronAPI.onSpotifyAuthSuccess) {
-      window.electronAPI.onSpotifyAuthSuccess(() => {
-        if (loginScreen) {
-          loginScreen.style.display = 'none';
-        }
+      window.electronAPI.onSpotifyAuthSuccess((event, { accessToken }) => {
+        hideLoginScreen();
+        renderApp(accessToken);
       });
     }
 
@@ -58,6 +88,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (message) {
           alert(`Spotify auth failed: ${message}`);
         }
+        showLoginScreen();
       });
   }
   }
