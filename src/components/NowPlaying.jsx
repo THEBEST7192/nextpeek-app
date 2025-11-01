@@ -1,40 +1,79 @@
 import React, { useState, useEffect } from 'react';
-import { getCurrentlyPlaying } from '../services/spotifyService';
 import SongDisplay from './SongDisplay.jsx';
 
-const NowPlaying = ({ accessToken }) => {
+const NowPlaying = () => {
   const [currentlyPlaying, setCurrentlyPlaying] = useState(null);
+  const [queue, setQueue] = useState([]);
 
   useEffect(() => {
-    const fetchPlaybackState = async () => {
-      if (accessToken) {
-        const current = await getCurrentlyPlaying(accessToken);
-        setCurrentlyPlaying(current?.item || null);
-      }
-    };
+    // Listen for queue updates from the main process
+    if (window.electronAPI && window.electronAPI.onQueueUpdated) {
+      const handleQueueUpdate = (event, data) => {
+        if (data.nowPlaying) {
+          setCurrentlyPlaying(data.nowPlaying);
+        }
+        if (data.queue) {
+          setQueue(data.queue);
+        }
+      };
 
-    fetchPlaybackState();
-    const interval = setInterval(fetchPlaybackState, 15000); // Refresh every 15 seconds
+      window.electronAPI.onQueueUpdated(handleQueueUpdate);
 
-    return () => clearInterval(interval);
-  }, [accessToken]);
+      // Clean up listener
+      return () => {
+        if (window.electronAPI.removeQueueUpdatedListener) {
+          window.electronAPI.removeQueueUpdatedListener();
+        }
+      };
+    }
+  }, []);
+
+  // Custom renderer for queue items
+  const renderQueueItem = (song, index) => {
+    if (!song) return null;
+    
+    return (
+      <div key={index} className="queue-item">
+        <div className="queue-number">{index + 1}</div>
+        <div className="song-item">
+          {song.album_cover && <img src={song.album_cover} alt={song.title} className="song-album-art" />}
+          <div className="song-details">
+            <p className="song-title truncate-text">{song.title}</p>
+            <p className="song-artist">{song.artist}</p>
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   return (
     <div className="now-playing">
       <h2 className="section-title">Now Playing</h2>
       <div className="now-playing-section">
-        {currentlyPlaying ? (
+        {currentlyPlaying && currentlyPlaying.title ? (
           <div className="now-playing-container">
-            <SongDisplay song={currentlyPlaying} onClick={() => window.electronAPI.togglePlayPause()} />
+            <div className="song-item" onClick={() => window.electronAPI.togglePlay()}>
+              {currentlyPlaying.album_cover && <img src={currentlyPlaying.album_cover} alt={currentlyPlaying.title} className="song-album-art" />}
+              <div className="song-details">
+                <p className="song-title truncate-text">{currentlyPlaying.title}</p>
+                <p className="song-artist">{currentlyPlaying.artist}</p>
+              </div>
+            </div>
           </div>
         ) : (
-          <p>Nothing is currently playing.</p>
+          <p className="no-playing-message">Nothing is currently playing.</p>
         )}
       </div>
 
       <h2 className="section-title">Queue</h2>
       <div className="queue-section">
-        <p>Coming Soon</p>
+        {queue.length > 0 ? (
+          <div className="queue-list">
+            {queue.map((song, index) => renderQueueItem(song, index))}
+          </div>
+        ) : (
+          <p className="queue-empty-message">Queue is empty</p>
+        )}
       </div>
     </div>
   );

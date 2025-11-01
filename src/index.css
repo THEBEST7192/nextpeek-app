@@ -210,8 +210,12 @@ body {
   width: 100%; 
 }
 
-.queue-section p {
-  color: #fff; 
+.no-playing-message {
+  color: #fff;
+}
+
+.queue-empty-message {
+  color: #fff;
 }
 
 .now-playing-container {

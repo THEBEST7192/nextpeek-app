@@ -15,9 +15,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
   removePinStateListener: () => ipcRenderer.removeAllListeners('pin-state-changed'),
   onPlayStateChange: (callback) => ipcRenderer.on('play-state-changed', callback),
   removePlayStateListener: () => ipcRenderer.removeAllListeners('play-state-changed'),
-  // Spotify OAuth
-  startSpotifyAuth: () => ipcRenderer.send('spotify-login'),
-  onSpotifyAuthSuccess: (callback) => ipcRenderer.on('spotify-auth-success', callback),
-  onSpotifyAuthError: (callback) => ipcRenderer.on('spotify-auth-error', callback),
-  getSpotifyAuthStatus: () => ipcRenderer.invoke('spotify-auth-status')
+  // Queue service
+  startQueueListener: () => ipcRenderer.invoke('start-queue-listener'),
+  onQueueUpdated: (callback) => ipcRenderer.on('queue-updated', callback),
+  onQueueServerStarted: (callback) => ipcRenderer.on('queue-server-started', callback),
+  togglePlay: () => ipcRenderer.invoke('toggle-play'),
+  nextTrack: () => ipcRenderer.invoke('next-track'),
+  previousTrack: () => ipcRenderer.invoke('previous-track')
 });

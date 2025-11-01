@@ -11,19 +11,19 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Spotify login button
-  const spotifyLoginBtn = document.getElementById('spotify-login-btn');
+  // Start button
+  const startBtn = document.getElementById('spotify-login-btn');
   const loginScreen = document.getElementById('login-screen');
-  const spotifyLoginTextEl = document.getElementById('spotify-login-text');
+  const startBtnTextEl = document.getElementById('spotify-login-text');
   const rootElement = document.getElementById('root');
   const root = ReactDOM.createRoot(rootElement);
 
-  const renderApp = async (accessToken) => {
+  const renderApp = async () => {
     if (rootElement) {
-      document.body.classList.add('logged-in'); // Add class when logged in
+      document.body.classList.add('logged-in'); // Add class when started
       root.render(
         <React.StrictMode>
-          <NowPlaying accessToken={accessToken} />
+          <NowPlaying />
         </React.StrictMode>
       );
     }
@@ -37,60 +37,39 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const showLoginScreen = () => {
     if (loginScreen) {
-      document.body.classList.remove('logged-in'); // Remove class when not logged in
+      document.body.classList.remove('logged-in'); // Remove class when not started
       loginScreen.style.display = 'block';
     }
   };
 
-  if (spotifyLoginBtn && window.electronAPI) {
-    // Initialize status on load
-    if (window.electronAPI.getSpotifyAuthStatus) {
-      window.electronAPI.getSpotifyAuthStatus().then((status) => {
-        if (status && status.accessToken) {
-          hideLoginScreen();
-          renderApp(status.accessToken);
-        } else {
-          showLoginScreen();
-        }
-      }).catch(() => {
-        showLoginScreen();
-      });
-    }
-
-    // Start OAuth login on click
-    spotifyLoginBtn.addEventListener('click', () => {
-      if (window.electronAPI.startSpotifyAuth) {
-        window.electronAPI.startSpotifyAuth();
+  if (startBtn && window.electronAPI) {
+    // Start queue listener on click
+    startBtn.addEventListener('click', () => {
+      if (window.electronAPI.startQueueListener) {
+        window.electronAPI.startQueueListener();
         // Provide immediate feedback
-        spotifyLoginBtn.disabled = true;
-        if (spotifyLoginTextEl) {
-          spotifyLoginTextEl.textContent = 'Opening Spotify…';
+        startBtn.disabled = true;
+        if (startBtnTextEl) {
+          startBtnTextEl.textContent = 'Starting...';
         }
       }
     });
 
-    // Handle success
-    if (window.electronAPI.onSpotifyAuthSuccess) {
-      window.electronAPI.onSpotifyAuthSuccess((event, { accessToken }) => {
+    // Handle queue server started
+    if (window.electronAPI.onQueueServerStarted) {
+      window.electronAPI.onQueueServerStarted(() => {
         hideLoginScreen();
-        renderApp(accessToken);
+        renderApp();
       });
     }
 
-    // Handle error
-    if (window.electronAPI.onSpotifyAuthError) {
-      window.electronAPI.onSpotifyAuthError((event, message) => {
-        // Restore button state and show error
-        spotifyLoginBtn.disabled = false;
-        if (spotifyLoginTextEl) {
-          spotifyLoginTextEl.textContent = 'Log in with Spotify';
-        }
-        if (message) {
-          alert(`Spotify auth failed: ${message}`);
-        }
-        showLoginScreen();
+    // Handle queue updates
+    if (window.electronAPI.onQueueUpdated) {
+      window.electronAPI.onQueueUpdated((event, queueData) => {
+        console.log('Queue updated:', queueData);
+        // You can update the UI with the queue data here
       });
-  }
+    }
   }
 
   // Minimize button
