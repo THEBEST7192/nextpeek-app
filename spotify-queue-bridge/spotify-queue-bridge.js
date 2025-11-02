@@ -87,7 +87,7 @@
   Spicetify.Player.addEventListener("onprogress", debouncedUpdateBackend);
 
   // Update every 5s
-  // setInterval(updateBackend, 5000);
+  setInterval(updateBackend, 5000);
   setInterval(checkCommands, 1000);
 
   updateBackend();

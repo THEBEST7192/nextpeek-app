@@ -5,6 +5,13 @@ body {
   margin: 0;
   padding: 0;
   background-color: rgba(245, 245, 245, 0.8);
+  overflow-y: auto;
+}
+
+/* Invisible (Metal Gear refrence) scrollbar styling */
+::-webkit-scrollbar {
+  width: 0px;
+  background: transparent;
 }
 
 .logged-in {
@@ -187,12 +194,18 @@ body {
 }
 
 .now-playing {
-  padding: 20px; 
+  padding: 10px 20px; 
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 10px; 
   margin: 0 auto;
   max-width: 440px;
+}
+
+.queue-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px; 
 }
 
 .section-title {
@@ -221,15 +234,14 @@ body {
 .now-playing-container {
   background-color: rgba(255, 255, 255, 0.1);
   border-radius: 10px;
-  padding: 15px;
+  padding: 10px;
   backdrop-filter: blur(10px);
   transition: background-color 0.3s ease;
   margin: 0 auto; /* Center the container within its parent */
   width: 100%;
-  max-width: 15rem; /* Adjusted max-width for better balance */
+  max-width: 15rem;
 }
 
-/* Removed the hover effect */
 
 .queue-list {
   display: flex;
@@ -240,31 +252,38 @@ body {
 .song-item {
   display: flex;
   align-items: center;
-  gap: 15px;
+  gap: 8px;
   width: 100%;
+  cursor: pointer;
 }
 
 .song-album-art {
-  width: 60px;
-  height: 60px;
-  border-radius: 5px;
+  width: 40px; 
+  height: 40px; 
+  flex-shrink: 0;
+  aspect-ratio: 1/1;
+  border-radius: 10px;
 }
 
 .song-details {
-  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px; 
+  flex: 1;
   min-width: 0;
 }
 
 .song-title {
+  color: #fff;
+  font-size: 13px; 
   font-weight: 600;
   margin: 0;
-  color: #fff;
 }
 
 .song-artist {
-  margin: 0; /* Removed margin-top for better vertical alignment */
   color: #ccc;
-  font-size: 0.9rem;
+  font-size: 11px; 
+  margin: 0;
 }
 
 .truncate-text {

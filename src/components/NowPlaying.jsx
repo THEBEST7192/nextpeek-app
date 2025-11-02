@@ -29,14 +29,22 @@ const NowPlaying = () => {
   }, []);
 
   // Custom renderer for queue items
+  const getImageUrl = (uri) => {
+    if (uri && uri.startsWith('spotify:image:')) {
+      return `https://i.scdn.co/image/${uri.split(':').pop()}`;
+    }
+    return uri;
+  };
+
   const renderQueueItem = (song, index) => {
     if (!song) return null;
     
+    const albumCoverUrl = getImageUrl(song.album_cover);
+
     return (
       <div key={index} className="queue-item">
-        <div className="queue-number">{index + 1}</div>
         <div className="song-item">
-          {song.album_cover && <img src={song.album_cover} alt={song.title} className="song-album-art" />}
+          {albumCoverUrl && <img src={albumCoverUrl} alt={song.title} className="song-album-art" />}
           <div className="song-details">
             <p className="song-title truncate-text">{song.title}</p>
             <p className="song-artist">{song.artist}</p>
@@ -53,7 +61,7 @@ const NowPlaying = () => {
         {currentlyPlaying && currentlyPlaying.title ? (
           <div className="now-playing-container">
             <div className="song-item" onClick={() => window.electronAPI.togglePlay()}>
-              {currentlyPlaying.album_cover && <img src={currentlyPlaying.album_cover} alt={currentlyPlaying.title} className="song-album-art" />}
+              {getImageUrl(currentlyPlaying.album_cover) && <img src={getImageUrl(currentlyPlaying.album_cover)} alt={currentlyPlaying.title} className="song-album-art" />}
               <div className="song-details">
                 <p className="song-title truncate-text">{currentlyPlaying.title}</p>
                 <p className="song-artist">{currentlyPlaying.artist}</p>
@@ -68,8 +76,10 @@ const NowPlaying = () => {
       <h2 className="section-title">Queue</h2>
       <div className="queue-section">
         {queue.length > 0 ? (
-          <div className="queue-list">
-            {queue.map((song, index) => renderQueueItem(song, index))}
+          <div className="now-playing-container">
+            <div className="queue-list">
+              {queue.map((song, index) => renderQueueItem(song, index))}
+            </div>
           </div>
         ) : (
           <p className="queue-empty-message">Queue is empty</p>
