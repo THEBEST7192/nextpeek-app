@@ -41,7 +41,7 @@ const startQueueListener = () => {
   if (queueServer) return;
   
   // Start the queue server
-  queueServer = startQueueServer();
+  queueServer = startQueueServer(mainWindow);
   
   // Notify the renderer that the queue server has started
   mainWindow?.webContents.send('queue-server-started');

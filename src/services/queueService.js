@@ -13,7 +13,7 @@ let currentQueue = {
 let pendingCommand = null;
 
 // Create HTTP server to handle queue data
-export function startQueueServer() {
+export function startQueueServer(mainWindow) {
   const server = http.createServer((req, res) => {
     // Set CORS headers
     res.setHeader('Access-Control-Allow-Origin', '*');
@@ -42,7 +42,7 @@ export function startQueueServer() {
           console.log('Queue updated:', data);
           
           // Send the queue data to the renderer process
-          global.mainWindow?.webContents.send('queue-updated', data);
+          mainWindow?.webContents.send('queue-updated', data);
           
           res.writeHead(200, { 'Content-Type': 'application/json' });
           res.end(JSON.stringify({ status: 'success' }));
