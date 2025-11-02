@@ -51,12 +51,15 @@ const startQueueListener = () => {
 const TRIGGER_ZONE_WIDTH = 5; // 5px trigger zone on screen edges
 const ANIMATION_DURATION = 300; // ms for slide animation
 const HIDE_DELAY = 500; // ms delay before hiding sidebar
+// Use a single source of truth for snap width to avoid rounding drift
+const SNAP_RATIO = 0.2;
+const getTargetWidth = (workArea) => Math.round(workArea.width * SNAP_RATIO);
 
 const createWindow = () => {
   // Create the browser window.
   const initialDisplay = screen.getDisplayNearestPoint(screen.getCursorScreenPoint());
   const workArea = initialDisplay.workArea;
-  const targetWidth = Math.floor(workArea.width / 5);
+  const targetWidth = getTargetWidth(workArea);
   
   mainWindow = new BrowserWindow({
     width: targetWidth,
@@ -139,7 +142,7 @@ const startMouseTracking = () => {
     if (!activeWindowDisplay) return; // enforce window's display only
     const workAreaForWindow = activeWindowDisplay.workArea;
     const windowBounds = mainWindow.getBounds();
-    const targetWidth = Math.floor(workAreaForWindow.width / 5);
+    const targetWidth = getTargetWidth(workAreaForWindow);
 
     // Detect which edge the window is currently docked to and update currentSide
     const isOnLeftEdge = Math.abs(windowBounds.x - workAreaForWindow.x) < 5;
@@ -242,7 +245,7 @@ const showSidebar = (side = 'left') => {
   const activeDisplay = getDisplayForWindow();
   if (!activeDisplay) return; // window not ready
   const workArea = activeDisplay.workArea;
-  const targetWidth = Math.floor(workArea.width / 5);
+  const targetWidth = getTargetWidth(workArea);
 
   // Clear any pending hide timeout
   if (hideTimeout) {
@@ -352,7 +355,7 @@ const togglePin = () => {
     const currentBounds = mainWindow.getBounds();
     const activeDisplay = getDisplayForWindow();
     if (!activeDisplay) return;
-    const targetWidth = Math.floor(activeDisplay.workArea.width / 5);
+    const targetWidth = getTargetWidth(activeDisplay.workArea);
     
     // Keep the same position but adjust width/height
     mainWindow.setBounds({
@@ -366,7 +369,7 @@ const togglePin = () => {
     if (!activeDisplay) return;
     const workArea = activeDisplay.workArea;
     const currentBounds = mainWindow.getBounds();
-    const targetWidth = Math.floor(workArea.width / 5);
+    const targetWidth = getTargetWidth(workArea);
     
     // Determine which side is closer (left or right)
     const distToLeft = Math.abs(currentBounds.x - workArea.x);
@@ -418,7 +421,7 @@ const hideSidebar = () => {
   if (!activeDisplay) return; // window not ready
   const workArea = activeDisplay.workArea;
   const windowBounds = mainWindow.getBounds();
-  const targetWidth = Math.floor(workArea.width / 5);
+  const targetWidth = getTargetWidth(workArea);
 
   // Determine which side we're on - use approximate comparison for floating point values
   const isOnLeft = Math.abs(windowBounds.x - workArea.x) < 5;
@@ -507,7 +510,7 @@ const initializeWindowSize = () => {
   if (!activeDisplay) return;
   
   const workArea = activeDisplay.workArea;
-  const targetWidth = Math.floor(workArea.width / 5);
+  const targetWidth = getTargetWidth(workArea);
   
   // Set the window to the correct size and position based on current side
   const targetX = currentSide === 'left' ? workArea.x : workArea.x + workArea.width - targetWidth;
@@ -542,12 +545,13 @@ app.whenReady().then(() => {
     return isPinned;
   });
 
-  ipcMain.handle('toggle-play', () => {
+  ipcMain.on('toggle-play-pause', () => {
+    const command = isPlaying ? 'pause' : 'play';
+    sendCommand(command);
     isPlaying = !isPlaying;
-    mainWindow?.webContents.send('play-state-changed', isPlaying);
-    // Send play/pause command to Spotify
-    sendCommand(isPlaying ? 'play' : 'pause');
-    return isPlaying;
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send('play-state-changed', isPlaying);
+    }
   });
 
   ipcMain.handle('start-queue-listener', () => {
@@ -606,19 +610,19 @@ ipcMain.on('toggle-pin', () => {
 
 // These would be connected to your actual music player functionality
 ipcMain.on('toggle-play-pause', () => {
-  console.log('Play/Pause toggled');
-  isPlaying = !isPlaying;
-  if (mainWindow && !mainWindow.isDestroyed()) {
-    mainWindow.webContents.send('play-state-changed', isPlaying);
-  }
+  sendCommand('togglePlayPause');
 });
 
 ipcMain.on('skip-previous', () => {
-  console.log('Skip to previous track');
+  sendCommand('previous');
 });
 
 ipcMain.on('skip-next', () => {
-  console.log('Skip to next track');
+  sendCommand('next');
+});
+
+ipcMain.on('skip-next', () => {
+  sendCommand('next');
 });
 
 ipcMain.on('snap-window', () => {
@@ -626,13 +630,15 @@ ipcMain.on('snap-window', () => {
     const currentBounds = mainWindow.getBounds();
     const activeDisplay = getDisplayForWindow();
     const workArea = activeDisplay.workArea;
-
-    const targetWidth = Math.floor(workArea.width / 5);
+    const targetWidth = getTargetWidth(workArea);
     const targetHeight = workArea.height;
+    // Allow for minor DPI/frame rounding differences
+    const EPS = 6;
+    const widthClose = Math.abs(currentBounds.width - targetWidth) <= EPS;
 
     // Determine if currently snapped to left or right
-    const isSnappedLeft = currentBounds.x === workArea.x && currentBounds.width === targetWidth;
-    const isSnappedRight = currentBounds.x === workArea.x + workArea.width - targetWidth && currentBounds.width === targetWidth;
+    const isSnappedLeft = Math.abs(currentBounds.x - workArea.x) <= EPS && widthClose;
+    const isSnappedRight = Math.abs(currentBounds.x - (workArea.x + workArea.width - targetWidth)) <= EPS && widthClose;
 
     if (isSnappedLeft) {
       // If snapped left, snap to right
@@ -642,6 +648,7 @@ ipcMain.on('snap-window', () => {
         width: targetWidth,
         height: targetHeight,
       });
+      currentSide = 'right';
     } else if (isSnappedRight) {
       // If snapped right, snap to left
       mainWindow.setBounds({
@@ -650,6 +657,7 @@ ipcMain.on('snap-window', () => {
         width: targetWidth,
         height: targetHeight,
       });
+      currentSide = 'left';
     } else {
       // If not snapped, snap to the closest side
       const centerOfScreen = workArea.x + workArea.width / 2;
@@ -663,6 +671,7 @@ ipcMain.on('snap-window', () => {
           width: targetWidth,
           height: targetHeight,
         });
+        currentSide = 'left';
       } else {
         // Closer to right, snap right
         mainWindow.setBounds({
@@ -671,6 +680,7 @@ ipcMain.on('snap-window', () => {
           width: targetWidth,
           height: targetHeight,
         });
+        currentSide = 'right';
       }
     }
     console.log('Window snapped');

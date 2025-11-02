@@ -19,7 +19,4 @@ contextBridge.exposeInMainWorld('electronAPI', {
   startQueueListener: () => ipcRenderer.invoke('start-queue-listener'),
   onQueueUpdated: (callback) => ipcRenderer.on('queue-updated', callback),
   onQueueServerStarted: (callback) => ipcRenderer.on('queue-server-started', callback),
-  togglePlay: () => ipcRenderer.invoke('toggle-play'),
-  nextTrack: () => ipcRenderer.invoke('next-track'),
-  previousTrack: () => ipcRenderer.invoke('previous-track')
 });

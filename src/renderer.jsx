@@ -83,16 +83,45 @@ document.addEventListener('DOMContentLoaded', () => {
   // Play/Pause button
   const playPauseButton = document.getElementById('play-pause-button');
   if (playPauseButton) {
+    // Track manual changes with a timeout
+    let manualChangeTimeout = null;
+    let lastSpotifyState = null;
+    
     playPauseButton.addEventListener('click', () => {
+      // Send the command to toggle play/pause
       window.electronAPI.togglePlayPause();
+      
+      // Get current state before toggling
+      const img = playPauseButton.querySelector('img');
+      const currentIsPlaying = img.src.includes('pause.svg');
+      
+      // Update UI immediately for responsive feel - toggle the current state
+      img.src = !currentIsPlaying ? './src/assets/icons/pause.svg' : './src/assets/icons/play.svg';
+      
+      // Clear any existing timeout
+      if (manualChangeTimeout) {
+        clearTimeout(manualChangeTimeout);
+      }
+      
+      // Set timeout to force sync with Spotify state after 500ms
+      manualChangeTimeout = setTimeout(() => {
+        if (lastSpotifyState !== null) {
+          // Apply the last known Spotify state after delay
+          img.src = lastSpotifyState ? './src/assets/icons/pause.svg' : './src/assets/icons/play.svg';
+        }
+        manualChangeTimeout = null;
+      }, 500);
     });
     
     // Listen for play state changes from main process
     if (window.electronAPI && window.electronAPI.onPlayStateChange) {
       window.electronAPI.onPlayStateChange((event, isPlaying) => {
+        // Always store the latest state from Spotify
+        lastSpotifyState = isPlaying;
+        
         const img = playPauseButton.querySelector('img');
-        if (img) {
-          // Update icon based on actual play state
+        if (img && !manualChangeTimeout) {
+          // Only update icon if we're not in a manual change period
           img.src = isPlaying ? './src/assets/icons/pause.svg' : './src/assets/icons/play.svg';
         }
       });

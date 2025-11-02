@@ -20,6 +20,7 @@
             title: current.title,
             artist: current.artist_name,
             album_cover: current.image_url,
+            isPlaying: Spicetify.Player.isPlaying(),
           }
         : {};
 
@@ -79,16 +80,16 @@
     };
   }
 
-  const debouncedUpdateBackend = debounce(updateBackend, 1000);
+  const debouncedUpdateBackend = debounce(updateBackend, 300);
+  const playPauseUpdateBackend = debounce(updateBackend, 100);
 
   Spicetify.Player.addEventListener("songchange", debouncedUpdateBackend);
   Spicetify.Player.addEventListener("queuechange", debouncedUpdateBackend);
-  Spicetify.Player.addEventListener("onplaypause", debouncedUpdateBackend);
+  Spicetify.Player.addEventListener("onplaypause", playPauseUpdateBackend); 
   Spicetify.Player.addEventListener("onprogress", debouncedUpdateBackend);
 
-  // Update every 5s
-  setInterval(updateBackend, 5000);
-  setInterval(checkCommands, 1000);
+  setInterval(updateBackend, 2000); 
+  setInterval(checkCommands, 500); 
 
   updateBackend();
 })();

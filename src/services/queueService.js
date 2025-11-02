@@ -41,6 +41,14 @@ export function startQueueServer(mainWindow) {
           currentQueue = data;
           console.log('Queue updated:', data);
           
+          // Update play state if available
+          if (data.nowPlaying && data.nowPlaying.isPlaying !== undefined) {
+            // Update the main process about external play state changes
+            mainWindow?.webContents.emit('external-play-state-changed', data.nowPlaying.isPlaying);
+            // Send play state to renderer
+            mainWindow?.webContents.send('play-state-changed', data.nowPlaying.isPlaying);
+          }
+          
           // Send the queue data to the renderer process
           mainWindow?.webContents.send('queue-updated', data);
           
