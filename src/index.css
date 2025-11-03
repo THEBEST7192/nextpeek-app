@@ -4,7 +4,7 @@ body {
     sans-serif;
   margin: 0;
   padding: 0;
-  background-color: rgba(245, 245, 245, 0.8);
+  background-color: rgba(18, 18, 18, 0.8);
   overflow-y: auto;
 }
 
@@ -15,14 +15,14 @@ body {
 }
 
 .logged-in {
-  background-color: rgba(245, 245, 245, 0.2);
+  background-color: rgba(18, 18, 18, 0.2);
 }
 
 #titlebar {
   height: 61px;
   width: 100%;
   -webkit-app-region: drag;
-  background-color: rgba(213,227,243,0.38);
+  background-color: rgba(0, 0, 0, 0.38);
   overflow: hidden;
   display: flex;
   align-items: center;
@@ -42,7 +42,7 @@ body {
   width: 100%;
   height: 100%;
   display: block;
-  filter: invert(8%) sepia(10%) saturate(1500%) hue-rotate(210deg) brightness(95%) contrast(90%);
+  filter: invert(100%); 
 }
 
 #playback-controls {
@@ -130,21 +130,21 @@ body {
   font-size: 2rem;
   font-weight: 700;
   margin: 0 0 0.5rem 0;
-  color: #1db954; /* Spotify green */
+  color: #ffffff;
 }
 
 #login-screen h2 {
   font-size: 1.5rem;
   font-weight: 600;
   margin: 0 0 1.5rem 0;
-  color: #191414; /* Spotify black */
+  color: #b3b3b3;
 }
 
 #login-screen p {
   font-size: 1rem;
   line-height: 1.5;
   margin: 0 0 1rem 0;
-  color: #535353;
+  color: #a7a7a7;
 }
 
 #spotify-login-btn {
@@ -243,7 +243,7 @@ body {
 }
 
 .queue-item {
-  background-color: rgba(255, 255, 255, 0.1);
+  background-color: rgba(255, 255, 255, 0.05);
   border-radius: 10px;
   backdrop-filter: blur(10px);
   padding: 10px;
