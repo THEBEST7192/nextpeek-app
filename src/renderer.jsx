@@ -80,6 +80,22 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  // Next button
+  const nextButton = document.getElementById('next-button');
+  if (nextButton) {
+    nextButton.addEventListener('click', () => {
+      window.electronAPI.skipNext();
+    });
+  }
+  
+  // Previous button
+  const prevButton = document.getElementById('prev-button');
+  if (prevButton) {
+    prevButton.addEventListener('click', () => {
+      window.electronAPI.skipPrevious();
+    });
+  }
+
   // Play/Pause button
   const playPauseButton = document.getElementById('play-pause-button');
   if (playPauseButton) {
@@ -126,22 +142,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       });
     }
-  }
-
-  // Skip previous button
-  const skipPreviousButton = document.getElementById('skip-previous-button');
-  if (skipPreviousButton) {
-    skipPreviousButton.addEventListener('click', () => {
-      window.electronAPI.skipPrevious();
-    });
-  }
-
-  // Skip next button
-  const skipNextButton = document.getElementById('skip-next-button');
-  if (skipNextButton) {
-    skipNextButton.addEventListener('click', () => {
-      window.electronAPI.skipNext();
-    });
   }
 
   // Snap button

@@ -82,8 +82,7 @@ const createWindow = () => {
   mainWindow.setAlwaysOnTop(true, 'screen-saver');
   mainWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
   
-  // For Windows, set the window to be a tool window which helps with fullscreen apps
-  mainWindow.setSkipTaskbar(true);
+  mainWindow.setSkipTaskbar(false);
   
   // Send initial play state to renderer
   mainWindow.webContents.on('did-finish-load', () => {
