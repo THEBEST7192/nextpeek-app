@@ -108,11 +108,6 @@ body {
   }
 }
 
-#content {
-  max-width: 38rem;
-  margin: auto;
-  /* padding: 2rem; */ /* Removed padding to fix offset */
-}
 
 /* Login Screen Styles */
 #login-screen {
@@ -191,21 +186,18 @@ body {
 #content {
   max-width: 38rem;
   margin: auto;
+  padding: 10px;
 }
 
 .now-playing {
-  padding: 10px 20px; 
   display: flex;
   flex-direction: column;
-  gap: 10px; 
   margin: 0 auto;
-  max-width: 440px;
 }
 
 .queue-list {
   display: flex;
-  flex-direction: column;
-  gap: 10px; 
+  flex-direction: column;; 
 }
 
 .section-title {
@@ -232,43 +224,49 @@ body {
 }
 
 .now-playing-container {
-  background-color: rgba(255, 255, 255, 0.1);
-  border-radius: 10px;
-  padding: 10px;
-  backdrop-filter: blur(10px);
-  transition: background-color 0.3s ease;
   margin: 0 auto; /* Center the container within its parent */
   width: 100%;
-  max-width: 15rem;
 }
-
 
 .queue-list {
   display: flex;
   flex-direction: column;
-  gap: 15px;
+  width: 100%;
 }
 
 .song-item {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   width: 100%;
   cursor: pointer;
 }
 
-.song-album-art {
-  width: 40px; 
-  height: 40px; 
-  flex-shrink: 0;
-  aspect-ratio: 1/1;
+.queue-item {
+  background-color: rgba(255, 255, 255, 0.1);
   border-radius: 10px;
+  backdrop-filter: blur(10px);
+  padding: 10px;
+  margin-bottom: 10px; 
+}
+
+.queue-item:last-child {
+  margin-bottom: 0; /* No margin for the last item */
+}
+
+.song-album-art {
+  width: 15vw;
+  height: 15vw;
+  max-width: 70px;
+  max-height: 70px;
+  border-radius: 10px;
+  gap: 10px;
 }
 
 .song-details {
   display: flex;
   flex-direction: column;
-  gap: 2px; 
+  gap: 3px; 
   flex: 1;
   min-width: 0;
 }
@@ -278,55 +276,18 @@ body {
   font-size: 13px; 
   font-weight: 600;
   margin: 0;
-}
-
-.song-artist {
-  color: #ccc;
-  font-size: 11px; 
-  margin: 0;
-}
-
-.truncate-text {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-.song-item {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  width: 100%;
-  cursor: pointer;
-}
-
-.song-album-art {
-  width: 57px;
-  height: 57px;
-  flex-shrink: 0;
-  aspect-ratio: 1/1;
-  border-radius: 10px;
-}
-
-.song-details {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  flex: 1;
-  min-width: 0;
-}
-
-.song-title {
-  color: #fff;
-  font-size: 14px;
-  font-weight: 600;
-  margin: 0;
-}
-
 .song-artist {
-  color: #ccc;
-  font-size: 12px;
+  color: #e7e7e7;
+  font-size: 11px;
   margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .truncate-text {

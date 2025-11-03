@@ -59,8 +59,8 @@ const NowPlaying = () => {
       <h2 className="section-title">Now Playing</h2>
       <div className="now-playing-section">
         {currentlyPlaying && currentlyPlaying.title ? (
-          <div className="now-playing-container">
-            <div className="song-item" onClick={() => window.electronAPI.togglePlay()}>
+          <div className="queue-item" onClick={() => window.electronAPI.togglePlay()}>
+            <div className="song-item">
               {getImageUrl(currentlyPlaying.album_cover) && <img src={getImageUrl(currentlyPlaying.album_cover)} alt={currentlyPlaying.title} className="song-album-art" />}
               <div className="song-details">
                 <p className="song-title truncate-text">{currentlyPlaying.title}</p>
@@ -76,10 +76,8 @@ const NowPlaying = () => {
       <h2 className="section-title">Queue</h2>
       <div className="queue-section">
         {queue.length > 0 ? (
-          <div className="now-playing-container">
-            <div className="queue-list">
-              {queue.map((song, index) => renderQueueItem(song, index))}
-            </div>
+          <div className="queue-list">
+            {queue.map((song, index) => renderQueueItem(song, index))}
           </div>
         ) : (
           <p className="queue-empty-message">Queue is empty</p>
