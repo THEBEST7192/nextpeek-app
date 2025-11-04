@@ -1,9 +1,7 @@
 name: Build Electron Forge App
 
 on:
-  push:
-    branches: [ main ]
-  pull_request:
+  workflow_dispatch:
 
 jobs:
   build:
