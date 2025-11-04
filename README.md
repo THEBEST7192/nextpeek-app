@@ -1,4 +1,4 @@
-# NextPeek - Spotify Queue Manager
+# NextPeek - Spotify Queue Viewer
 
 NextPeek gives you a clean, always-on window into your live Spotify queue, right on your desktop.
 
@@ -6,7 +6,7 @@ NextPeek gives you a clean, always-on window into your live Spotify queue, right
 
 1.  **Clone the repository:**
     ```bash
-    git clone <repository_url>
+    git clone https://github.com/THEBEST7192/nextpeek-app
     cd nextpeek-app
     ```
 
@@ -41,7 +41,7 @@ To enable NextPeek to receive queue information from Spotify, you need to instal
         ```
     These scripts will copy the `spotify-queue-bridge.js` file to your Spicetify extensions folder, enable it, and apply Spicetify changes.
 
-### Directory Overview (`/c:/Users/Administrator/Downloads/nextpeek-app/spotify-queue-bridge/`)
+### Directory Overview (`nextpeek-app/spotify-queue-bridge`)
 
 - `spotify-queue-bridge.js` — Spicetify userscript that:
   - Reads local queue data from `Spicetify.Queue.nextTracks` and the current item from `Spicetify.Player.data.item.metadata`.
