@@ -1,6 +1,10 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import NowPlaying from './components/NowPlaying.jsx';
+import playIcon from './assets/icons/play.svg';
+import pauseIcon from './assets/icons/pause.svg';
+import pinIcon from './assets/icons/pin.svg';
+import pinoffIcon from './assets/icons/pinoff.svg';
 
 document.addEventListener('DOMContentLoaded', () => {
   // Close button
@@ -112,7 +116,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const currentIsPlaying = img.src.includes('pause.svg');
       
       // Update UI immediately for responsive feel - toggle the current state
-      img.src = !currentIsPlaying ? './src/assets/icons/pause.svg' : './src/assets/icons/play.svg';
+      img.src = !currentIsPlaying ? pauseIcon : playIcon;
       
       // Clear any existing timeout
       if (manualChangeTimeout) {
@@ -123,7 +127,7 @@ document.addEventListener('DOMContentLoaded', () => {
       manualChangeTimeout = setTimeout(() => {
         if (lastSpotifyState !== null) {
           // Apply the last known Spotify state after delay
-          img.src = lastSpotifyState ? './src/assets/icons/pause.svg' : './src/assets/icons/play.svg';
+          img.src = lastSpotifyState ? pauseIcon : playIcon;
         }
         manualChangeTimeout = null;
       }, 500);
@@ -138,7 +142,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const img = playPauseButton.querySelector('img');
         if (img && !manualChangeTimeout) {
           // Only update icon if we're not in a manual change period
-          img.src = isPlaying ? './src/assets/icons/pause.svg' : './src/assets/icons/play.svg';
+          img.src = isPlaying ? pauseIcon : playIcon;
         }
       });
     }
@@ -165,7 +169,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const img = pinButton.querySelector('img');
         if (img) {
           // Update icon based on actual pin state
-          img.src = isPinned ? './src/assets/icons/pin.svg' : './src/assets/icons/pinoff.svg';
+          img.src = isPinned ? pinIcon : pinoffIcon;
         }
       });
     }
