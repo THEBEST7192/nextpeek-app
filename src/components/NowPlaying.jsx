@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import SongDisplay from './SongDisplay.jsx';
+import SearchBar from './SearchBar';
 
 const NowPlaying = () => {
   const [currentlyPlaying, setCurrentlyPlaying] = useState(null);
@@ -54,8 +55,14 @@ const NowPlaying = () => {
     );
   };
 
+  const handlePlaylistSelect = (playlist) => {
+    console.log('Selected playlist:', playlist);
+    // TODO: Play the playlist
+  };
+
   return (
     <div className="now-playing">
+      <SearchBar onPlaylistSelect={handlePlaylistSelect} />
       <h2 className="section-title">Now Playing</h2>
       <div className="now-playing-section">
         {currentlyPlaying && currentlyPlaying.title ? (

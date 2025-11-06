@@ -201,6 +201,7 @@ body {
 }
 
 .section-title {
+  margin-top: 0;
   font-size: 1.2rem;
   font-weight: 600;
   margin-bottom: 10px;
@@ -209,9 +210,9 @@ body {
 
 .now-playing-section,
 .queue-section {
+  gap: 10px;
   display: flex;
   flex-direction: column;
-  gap: 15px;
   width: 100%; 
 }
 
