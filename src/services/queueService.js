@@ -12,6 +12,12 @@ let currentQueue = {
 // Store pending command
 let pendingCommand = null;
 
+// Store user playlists
+let userPlaylists = [];
+
+// Store pending playlist requests
+let pendingPlaylistRequests = [];
+
 // Create HTTP server to handle queue data
 export function startQueueServer(mainWindow) {
   const server = http.createServer((req, res) => {
@@ -68,6 +74,67 @@ export function startQueueServer(mainWindow) {
       
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify(command));
+    }
+    // Handle playlist search requests
+    else if (req.url.startsWith('/api/searchPlaylists') && req.method === 'GET') {
+      const url = new URL(req.url, `http://${req.headers.host}`);
+      const query = url.searchParams.get('q') || '';
+      
+      // Request playlists from Spotify bridge
+      pendingCommand = { action: 'getPlaylists' };
+      
+      // Wait for response with timeout
+      const timeout = setTimeout(() => {
+        const index = pendingPlaylistRequests.findIndex(r => r.query === query);
+        if (index !== -1) {
+          pendingPlaylistRequests.splice(index, 1);
+        }
+        
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ playlists: userPlaylists.filter(p => 
+          p.name.toLowerCase().includes(query.toLowerCase()) ||
+          p.description.toLowerCase().includes(query.toLowerCase())
+        )}));
+      }, 2000);
+      
+      pendingPlaylistRequests.push({ query, res, timeout });
+    }
+    // Handle playlist response from Spotify bridge
+    else if (req.url === '/api/playlistsResponse' && req.method === 'POST') {
+      let body = '';
+      
+      req.on('data', (chunk) => {
+        body += chunk.toString();
+      });
+      
+      req.on('end', () => {
+        try {
+          const data = JSON.parse(body);
+          userPlaylists = data.playlists;
+          console.log('Playlists received:', userPlaylists.length);
+          
+          // Respond to all pending requests
+          pendingPlaylistRequests.forEach(({ query, res: pendingRes, timeout }) => {
+            clearTimeout(timeout);
+            const filteredPlaylists = userPlaylists.filter(p => 
+              p.name.toLowerCase().includes(query.toLowerCase()) ||
+              p.description.toLowerCase().includes(query.toLowerCase())
+            );
+            
+            pendingRes.writeHead(200, { 'Content-Type': 'application/json' });
+            pendingRes.end(JSON.stringify({ playlists: filteredPlaylists }));
+          });
+          
+          pendingPlaylistRequests = [];
+          
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ status: 'success' }));
+        } catch (error) {
+          console.error('Error parsing playlists data:', error);
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: 'Invalid JSON data' }));
+        }
+      });
     }
     // Handle unknown requests
     else {

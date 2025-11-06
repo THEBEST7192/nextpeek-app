@@ -45,10 +45,28 @@
   }
 
 
+  async function getUserPlaylists() {
+    try {
+      const root = await Spicetify.Platform.RootlistAPI.getContents();
+      const playlists = root.items.filter(i => i.type === "playlist");
+      
+      return playlists.map(playlist => ({
+        id: playlist.uri,
+        name: playlist.name,
+        description: playlist.description || '',
+        tracks: playlist.totalLength || 0,
+        uri: playlist.uri
+      }));
+    } catch (err) {
+      console.error("Failed to get user playlists:", err);
+      return [];
+    }
+  }
+
   async function checkCommands() {
     try {
       const res = await fetch("http://localhost:7192/api/command");
-      const { action } = await res.json();
+      const { action, data } = await res.json();
 
       switch (action) {
         case "play":
@@ -62,6 +80,14 @@
           break;
         case "previous":
           Spicetify.Player.back();
+          break;
+        case "getPlaylists":
+          const playlists = await getUserPlaylists();
+          await fetch("http://localhost:7192/api/playlistsResponse", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ playlists }),
+          });
           break;
         default:
           break;

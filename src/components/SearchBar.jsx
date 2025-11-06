@@ -1,39 +1,65 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import './SearchBar.css';
-
-// Mock playlist data
-const mockPlaylists = [
-  { id: 1, name: 'Heavy Metal Essentials', description: 'Classic and modern metal anthems', tracks: 28 },
-  { id: 2, name: 'Thrash Metal Mayhem', description: 'Fast riffs and aggressive vocals', tracks: 35 },
-  { id: 3, name: 'Progressive Metal Journey', description: 'Complex compositions and time signatures', tracks: 22 },
-  { id: 4, name: '80s Rock Anthems', description: 'The best of 80s hard rock and heavy metal', tracks: 42 },
-  { id: 5, name: 'Black Metal Legends', description: 'Atmospheric and raw black metal classics', tracks: 19 },
-  { id: 6, name: 'Power Metal Heroes', description: 'Epic vocals and soaring melodies', tracks: 31 },
-  { id: 7, name: 'Doom Metal Monolith', description: 'Slow, heavy, and crushing riffs', tracks: 16 },
-];
 
 const SearchBar = ({ onPlaylistSelect }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [isFocused, setIsFocused] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const debounceTimeout = useRef(null);
 
-  const handleSearch = (e) => {
-    const term = e.target.value;
-    setSearchTerm(term);
-    
+  const searchPlaylists = useCallback(async (term) => {
     if (term.trim() === '') {
       setSearchResults([]);
+      setIsLoading(false);
       return;
     }
 
-    // Simple search through mock playlists
-    const results = mockPlaylists.filter(playlist =>
-      playlist.name.toLowerCase().includes(term.toLowerCase()) ||
-      playlist.description.toLowerCase().includes(term.toLowerCase())
-    );
+    // Fetch playlists from the API
+    setIsLoading(true);
+    try {
+      const response = await fetch(`http://localhost:7192/api/searchPlaylists?q=${encodeURIComponent(term)}`);
+      const data = await response.json();
+      setSearchResults(data.playlists || []);
+    } catch (error) {
+      console.error('Failed to search playlists:', error);
+      setSearchResults([]);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  const handleSearch = useCallback((e) => {
+    const term = e.target.value;
+    setSearchTerm(term);
     
-    setSearchResults(results);
-  };
+    // Clear previous timeout
+    if (debounceTimeout.current) {
+      clearTimeout(debounceTimeout.current);
+    }
+    
+    if (term.trim() === '') {
+      setSearchResults([]);
+      setIsLoading(false);
+      return;
+    }
+
+    // Set loading state immediately
+    setIsLoading(true);
+    
+    // Debounce the search
+    debounceTimeout.current = setTimeout(() => {
+      searchPlaylists(term);
+    }, 300);
+  }, [searchPlaylists]);
+
+  useEffect(() => {
+    return () => {
+      if (debounceTimeout.current) {
+        clearTimeout(debounceTimeout.current);
+      }
+    };
+  }, []);
 
   const handlePlaylistSelect = (playlist) => {
     setSearchTerm('');
@@ -54,20 +80,31 @@ const SearchBar = ({ onPlaylistSelect }) => {
         onBlur={() => setTimeout(() => setIsFocused(false), 200)} // Small delay to allow click on results
         className="search-input"
       />
-      {(searchResults.length > 0 && isFocused) && (
+      {isFocused && (isLoading || searchResults.length > 0 || (searchTerm.trim() !== '' && !isLoading)) && (
         <div className="search-results">
-          {searchResults.map((playlist) => (
-            <div 
-              key={playlist.id} 
-              className="search-result-item"
-              onMouseDown={() => handlePlaylistSelect(playlist)} // Use onMouseDown to fire before onBlur
-            >
-              <div className="search-result-name">{playlist.name}</div>
-              <div className="search-result-description">
-                {playlist.description} • {playlist.tracks} tracks
-              </div>
+          {isLoading ? (
+            <div className="search-result-item search-loading">
+              <div className="search-result-name">Searching...</div>
             </div>
-          ))}
+          ) : searchResults.length === 0 ? (
+            <div className="search-result-item search-no-results">
+              <div className="search-result-name">No playlists found</div>
+              <div className="search-result-description">Try a different search term</div>
+            </div>
+          ) : (
+            searchResults.map((playlist) => (
+              <div 
+                key={playlist.id} 
+                className="search-result-item"
+                onMouseDown={() => handlePlaylistSelect(playlist)} // Use onMouseDown to fire before onBlur
+              >
+                <div className="search-result-name">{playlist.name}</div>
+                <div className="search-result-description">
+                  {playlist.description} • {playlist.tracks} tracks
+                </div>
+              </div>
+            ))
+          )}
         </div>
       )}
     </div>

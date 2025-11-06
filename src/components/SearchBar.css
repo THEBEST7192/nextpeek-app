@@ -62,6 +62,32 @@
   background-color: rgba(255, 255, 255, 0.05);
 }
 
+.search-loading {
+  cursor: default;
+  opacity: 0.7;
+}
+
+.search-loading:hover {
+  background-color: transparent;
+}
+
+.search-no-results {
+  cursor: default;
+}
+
+.search-no-results:hover {
+  background-color: transparent;
+}
+
+.search-no-results .search-result-name {
+  color: #fff;
+  opacity: 1;
+}
+
+.search-no-results .search-result-description {
+  opacity: 0.8;
+}
+
 .search-result-name {
   color: #fff;
   font-weight: 500;
