@@ -89,6 +89,17 @@
             body: JSON.stringify({ playlists }),
           });
           break;
+        case "playPlaylist":
+          if (data && data.uri) {
+            try {
+              // Use Spicetify.Player.playUri to play the playlist
+              await Spicetify.Player.playUri(data.uri);
+              console.log("Playing playlist:", data.uri);
+            } catch (err) {
+              console.error("Failed to play playlist:", err);
+            }
+          }
+          break;
         default:
           break;
       }

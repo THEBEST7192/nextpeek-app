@@ -55,9 +55,18 @@ const NowPlaying = () => {
     );
   };
 
-  const handlePlaylistSelect = (playlist) => {
+  const handlePlaylistSelect = async (playlist) => {
     console.log('Selected playlist:', playlist);
-    // TODO: Play the playlist
+    try {
+      if (window.electronAPI && window.electronAPI.playPlaylist) {
+        await window.electronAPI.playPlaylist(playlist.uri);
+        console.log('Playing playlist:', playlist.name);
+      } else {
+        console.error('playPlaylist API not available');
+      }
+    } catch (error) {
+      console.error('Failed to play playlist:', error);
+    }
   };
 
   return (

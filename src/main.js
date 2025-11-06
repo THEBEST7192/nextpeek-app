@@ -568,6 +568,11 @@ app.whenReady().then(() => {
     return true;
   });
 
+  ipcMain.handle('play-playlist', (event, playlistUri) => {
+    sendCommand('playPlaylist', { uri: playlistUri });
+    return true;
+  });
+
   // On OS X it's common to re-create a window in the app when the
   // dock icon is clicked and there are no other windows open.
   app.on('activate', () => {

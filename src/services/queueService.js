@@ -152,9 +152,9 @@ export function startQueueServer(mainWindow) {
 }
 
 // Send command to Spotify
-export function sendCommand(action) {
-  pendingCommand = { action };
-  console.log('Command set:', action);
+export function sendCommand(action, data = null) {
+  pendingCommand = data ? { action, data } : { action };
+  console.log('Command set:', action, data);
   return true;
 }
 
