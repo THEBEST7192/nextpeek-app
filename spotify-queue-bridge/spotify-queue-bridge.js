@@ -26,11 +26,13 @@
 
       const q =
         queue?.queue?.next_tracks?.map((t) => {
-          console.log('Queue track object:', t);
+          // console.log('Queue track object:', t);
+          const trackUri = t.uri || t.contextTrack?.uri || t.track?.uri || t.item?.uri || t.contextTrack?.metadata?.uri || t.metadata?.uri;
           return {
             title: t.contextTrack?.metadata?.title || t.track?.name || t.metadata?.title || t.item?.title || t.name,
             artist: t.contextTrack?.metadata?.artist_name || t.track?.artists?.[0]?.name || t.item?.artists?.[0]?.name || t.metadata?.artist_name || (t.artists?.[0]?.name ?? "Unknown"),
             album_cover: t.contextTrack?.metadata?.image_url || t.track?.album?.images?.[0]?.url || t.metadata?.image_url || t.item?.album?.images?.[0]?.url || t.album?.images?.[0]?.url,
+            uri: trackUri,
           }
         }) || [];
 
@@ -97,6 +99,57 @@
               console.log("Playing playlist:", data.uri);
             } catch (err) {
               console.error("Failed to play playlist:", err);
+            }
+          }
+          break;
+        case "playTrack":
+          if (data && data.uri) {
+            try {
+              const contextUri = Spicetify.Queue?.contextUri ||
+                Spicetify.Player.data?.context_uri ||
+                Spicetify.Player.data?.item?.metadata?.context_uri;
+
+              const queueSources = [
+                ...(Spicetify.Queue?.queue ?? []),
+                ...(Spicetify.Queue?.nextTracks ?? [])
+              ];
+
+              const matchTrack = queueSources.find((track) => {
+                const possibleUris = [
+                  track?.uri,
+                  track?.contextTrack?.uri,
+                  track?.contextTrack?.metadata?.uri,
+                  track?.track?.uri,
+                  track?.item?.uri,
+                  track?.metadata?.uri
+                ].filter(Boolean);
+                return possibleUris.includes(data.uri);
+              });
+
+              const trackUid = matchTrack?.contextTrack?.uid;
+
+              if (contextUri && trackUid && Spicetify.Platform?.PlayerAPI?.skipTo) {
+                await Spicetify.Platform.PlayerAPI.skipTo({
+                  uri: data.uri,
+                  uid: trackUid,
+                  contextUri,
+                });
+                return;
+              }
+
+              if (!contextUri) {
+                await Spicetify.Player.playUri(data.uri);
+                return;
+              }
+
+              await Spicetify.Player.playUri(data.uri, {
+                context: contextUri,
+                shuffleContext: Spicetify.Player.getShuffle(),
+                repeatContext: Spicetify.Player.getRepeat() === 1,
+                repeatTrack: Spicetify.Player.getRepeat() === 2,
+              });
+            } catch (err) {
+              console.error("Queue playback failed:", err);
             }
           }
           break;

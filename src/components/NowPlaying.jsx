@@ -43,7 +43,19 @@ const NowPlaying = () => {
     const albumCoverUrl = getImageUrl(song.album_cover);
 
     return (
-      <div key={index} className="queue-item">
+      <div
+        key={index}
+        className="queue-item"
+        onClick={async () => {
+          try {
+            if (song.uri && window.electronAPI && window.electronAPI.playTrack) {
+              await window.electronAPI.playTrack(song.uri);
+            }
+          } catch (e) {
+            console.error('Failed to jump to track:', e);
+          }
+        }}
+      >
         <div className="song-item">
           {albumCoverUrl && <img src={albumCoverUrl} alt={song.title} className="song-album-art" />}
           <div className="song-details">
