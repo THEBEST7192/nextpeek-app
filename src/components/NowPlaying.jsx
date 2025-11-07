@@ -87,7 +87,14 @@ const NowPlaying = () => {
       <h2 className="section-title">Now Playing</h2>
       <div className="now-playing-section">
         {currentlyPlaying && currentlyPlaying.title ? (
-          <div className="queue-item" onClick={() => window.electronAPI.togglePlay()}>
+          <div
+            className="queue-item"
+            onClick={() => {
+              if (window.electronAPI?.togglePlayPause) {
+                window.electronAPI.togglePlayPause();
+              }
+            }}
+          >
             <div className="song-item">
               {getImageUrl(currentlyPlaying.album_cover) && <img src={getImageUrl(currentlyPlaying.album_cover)} alt={currentlyPlaying.title} className="song-album-art" />}
               <div className="song-details">
