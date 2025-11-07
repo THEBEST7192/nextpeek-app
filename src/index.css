@@ -28,6 +28,11 @@ body {
   align-items: center;
   justify-content: space-between;
   padding: 0;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 10;
 }
 
 #titlebar > div {
@@ -186,7 +191,7 @@ body {
 #content {
   max-width: 38rem;
   margin: auto;
-  padding: 10px;
+  padding: 71px 10px 10px;
 }
 
 .now-playing {
