@@ -1,7 +1,8 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
+import settingsIcon from '../assets/icons/settings.svg';
 import './SearchBar.css';
 
-const SearchBar = ({ onPlaylistSelect }) => {
+const SearchBar = ({ onPlaylistSelect, onSettingsClick }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [isFocused, setIsFocused] = useState(false);
@@ -71,15 +72,30 @@ const SearchBar = ({ onPlaylistSelect }) => {
 
   return (
     <div className="search-container">
-      <input
-        type="text"
-        placeholder="Search playlists..."
-        value={searchTerm}
-        onChange={handleSearch}
-        onFocus={() => setIsFocused(true)}
-        onBlur={() => setTimeout(() => setIsFocused(false), 200)} // Small delay to allow click on results
-        className="search-input"
-      />
+      <div className="search-input-wrapper">
+        <input
+          type="text"
+          placeholder="Search playlists..."
+          value={searchTerm}
+          onChange={handleSearch}
+          onFocus={() => setIsFocused(true)}
+          onBlur={() => setTimeout(() => setIsFocused(false), 200)} // Small delay to allow click on results
+          className="search-input"
+        />
+        <button
+          type="button"
+          className="search-settings-button"
+          onMouseDown={(event) => event.preventDefault()}
+          onClick={() => {
+            if (onSettingsClick) {
+              onSettingsClick();
+            }
+          }}
+          aria-label="Open settings"
+        >
+          <img src={settingsIcon} alt="" aria-hidden="true" />
+        </button>
+      </div>
       {isFocused && (isLoading || searchResults.length > 0 || (searchTerm.trim() !== '' && !isLoading)) && (
         <div className="search-results">
           {isLoading ? (
