@@ -1,7 +1,7 @@
 // See the Electron documentation for details on how to use preload scripts:
 // https://www.electronjs.org/docs/latest/tutorial/process-model#preload-scripts
 
-const { contextBridge, ipcRenderer } = require('electron');
+import { contextBridge, ipcRenderer } from 'electron';
 
 contextBridge.exposeInMainWorld('electronAPI', {
   closeWindow: () => ipcRenderer.send('close-window'),
@@ -15,6 +15,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   removePinStateListener: () => ipcRenderer.removeAllListeners('pin-state-changed'),
   onPlayStateChange: (callback) => ipcRenderer.on('play-state-changed', callback),
   removePlayStateListener: () => ipcRenderer.removeAllListeners('play-state-changed'),
+  toggleTheme: (themeKey) => ipcRenderer.invoke('apply-theme', themeKey),
+  onThemeChange: (callback) => ipcRenderer.on('theme-changed', callback),
+  removeThemeChangeListener: () => ipcRenderer.removeAllListeners('theme-changed'),
   // Queue service
   startQueueListener: () => ipcRenderer.invoke('start-queue-listener'),
   onQueueUpdated: (callback) => ipcRenderer.on('queue-updated', callback),

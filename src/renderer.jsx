@@ -21,6 +21,31 @@ document.addEventListener('DOMContentLoaded', () => {
   const startBtnTextEl = document.getElementById('spotify-login-text');
   const rootElement = document.getElementById('root');
   const root = ReactDOM.createRoot(rootElement);
+  const themeToggleButton = document.getElementById('theme-toggle-button');
+  let currentTheme = document.body.dataset.theme || 'solid';
+
+  const updateThemeUI = (theme) => {
+    currentTheme = theme;
+    document.body.dataset.theme = theme;
+    if (themeToggleButton) {
+      themeToggleButton.textContent = theme === 'solid' ? 'Transparent Mode' : 'Solid Mode';
+    }
+  };
+
+  updateThemeUI(currentTheme);
+
+  if (window.electronAPI?.onThemeChange) {
+    window.electronAPI.onThemeChange((event, themeKey) => {
+      updateThemeUI(themeKey);
+    });
+  }
+
+  if (themeToggleButton && window.electronAPI?.toggleTheme) {
+    themeToggleButton.addEventListener('click', () => {
+      const nextTheme = currentTheme === 'solid' ? 'transparent' : 'solid';
+      window.electronAPI.toggleTheme(nextTheme);
+    });
+  }
 
   const renderApp = async () => {
     if (rootElement) {

@@ -1,13 +1,16 @@
 // Queue Service for NextPeek App
 // Handles queue information from port 7192
 
-const http = require('node:http');
+import http from 'node:http';
 
 // Store queue data
 let currentQueue = {
   nowPlaying: {},
   queue: []
 };
+
+// Track the renderer window to send IPC updates to
+let rendererWindow = null;
 
 // Store pending command
 let pendingCommand = null;
@@ -19,7 +22,12 @@ let userPlaylists = [];
 let pendingPlaylistRequests = [];
 
 // Create HTTP server to handle queue data
+export function setQueueWindow(mainWindow) {
+  rendererWindow = mainWindow;
+}
+
 export function startQueueServer(mainWindow) {
+  setQueueWindow(mainWindow);
   const server = http.createServer((req, res) => {
     // Set CORS headers
     res.setHeader('Access-Control-Allow-Origin', '*');
@@ -50,13 +58,13 @@ export function startQueueServer(mainWindow) {
           // Update play state if available
           if (data.nowPlaying && data.nowPlaying.isPlaying !== undefined) {
             // Update the main process about external play state changes
-            mainWindow?.webContents.emit('external-play-state-changed', data.nowPlaying.isPlaying);
+            rendererWindow?.webContents.emit('external-play-state-changed', data.nowPlaying.isPlaying);
             // Send play state to renderer
-            mainWindow?.webContents.send('play-state-changed', data.nowPlaying.isPlaying);
+            rendererWindow?.webContents.send('play-state-changed', data.nowPlaying.isPlaying);
           }
           
           // Send the queue data to the renderer process
-          mainWindow?.webContents.send('queue-updated', data);
+          rendererWindow?.webContents.send('queue-updated', data);
           
           res.writeHead(200, { 'Content-Type': 'application/json' });
           res.end(JSON.stringify({ status: 'success' }));
@@ -85,16 +93,12 @@ export function startQueueServer(mainWindow) {
       
       // Wait for response with timeout
       const timeout = setTimeout(() => {
-        const index = pendingPlaylistRequests.findIndex(r => r.query === query);
-        if (index !== -1) {
-          pendingPlaylistRequests.splice(index, 1);
-        }
-        
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ playlists: userPlaylists.filter(p => 
           p.name.toLowerCase().includes(query.toLowerCase()) ||
           p.description.toLowerCase().includes(query.toLowerCase())
         )}));
+        pendingPlaylistRequests = pendingPlaylistRequests.filter(request => request.res !== res);
       }, 2000);
       
       pendingPlaylistRequests.push({ query, res, timeout });

@@ -6,7 +6,7 @@ import dotenv from 'dotenv';
 import http from 'node:http';
 
 // Import queue service
-import { startQueueServer, sendCommand } from './services/queueService.js';
+import { startQueueServer, sendCommand, getCurrentQueue, setQueueWindow } from './services/queueService.js';
 
 dotenv.config();
 
@@ -28,6 +28,15 @@ let isPinned = true; // Track pin state - Start with pin on
 let isPlaying = false; // Track play state - Start with paused
 let currentSide = 'left'; // Track which side the sidebar is docked on
 let queueServer = null; // Queue server instance
+let isSwitchingTheme = false; // Track theme switching state
+let lastKnownBounds = null;
+
+const THEMES = {
+  solid: { transparent: false, backgroundColor: '#121212' },
+  transparent: { transparent: true, backgroundColor: '#00000000' },
+};
+
+let currentTheme = 'solid';
 
 // Helper: get the display that the window currently occupies
 const getDisplayForWindow = () => {
@@ -38,7 +47,11 @@ const getDisplayForWindow = () => {
 
 // Start the queue server
 const startQueueListener = () => {
-  if (queueServer) return;
+  if (queueServer) {
+    setQueueWindow(mainWindow);
+    mainWindow?.webContents.send('queue-server-started');
+    return;
+  }
   
   // Start the queue server
   queueServer = startQueueServer(mainWindow);
@@ -55,21 +68,42 @@ const HIDE_DELAY = 500; // ms delay before hiding sidebar
 const SNAP_RATIO = 0.2;
 const getTargetWidth = (workArea) => Math.round(workArea.width * SNAP_RATIO);
 
-const createWindow = () => {
+const createWindow = (options = {}) => {
   // Create the browser window.
   const initialDisplay = screen.getDisplayNearestPoint(screen.getCursorScreenPoint());
   const workArea = initialDisplay.workArea;
   const targetWidth = getTargetWidth(workArea);
-  
-  mainWindow = new BrowserWindow({
+
+  const themeKey = options.theme && THEMES[options.theme] ? options.theme : currentTheme;
+  currentTheme = themeKey;
+  const themeConfig = THEMES[themeKey];
+
+  const defaultBounds = {
     width: targetWidth,
     height: workArea.height,
     x: workArea.x,
     y: workArea.y,
+  };
+
+  const windowBounds = options.bounds
+    ? {
+        width: options.bounds.width ?? defaultBounds.width,
+        height: options.bounds.height ?? defaultBounds.height,
+        x: options.bounds.x ?? defaultBounds.x,
+        y: options.bounds.y ?? defaultBounds.y,
+      }
+    : defaultBounds;
+  
+  mainWindow = new BrowserWindow({
+    width: windowBounds.width,
+    height: windowBounds.height,
+    x: windowBounds.x,
+    y: windowBounds.y,
     frame: false,
-    transparent: true,
+    transparent: themeConfig.transparent,
+    backgroundColor: themeConfig.backgroundColor,
     resizable: true,
-    alwaysOnTop: true, // Start with always on top
+    alwaysOnTop: isPinned,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
@@ -78,15 +112,52 @@ const createWindow = () => {
     show: false, // Don't show until ready
   });
 
-  // Use the highest level for always-on-top to work with fullscreen applications
-  mainWindow.setAlwaysOnTop(true, 'screen-saver');
-  mainWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
+  if (options.bounds) {
+    const preservedBounds = {
+      x: typeof options.bounds.x === 'number' ? options.bounds.x : windowBounds.x,
+      y: typeof options.bounds.y === 'number' ? options.bounds.y : windowBounds.y,
+      width: typeof options.bounds.width === 'number' ? options.bounds.width : windowBounds.width,
+      height: typeof options.bounds.height === 'number' ? options.bounds.height : windowBounds.height,
+    };
+    mainWindow.setBounds(preservedBounds);
+    lastKnownBounds = preservedBounds;
+  } else {
+    lastKnownBounds = mainWindow.getBounds();
+  }
+
+  setQueueWindow(mainWindow);
+
+  const captureBounds = () => {
+    if (!mainWindow) {
+      return;
+    }
+    const currentBounds = mainWindow.getBounds();
+    lastKnownBounds = { ...currentBounds };
+  };
+
+  mainWindow.on('move', captureBounds);
+  mainWindow.on('resize', captureBounds);
+
+  // Apply current pin state for always-on-top behaviour
+  if (isPinned) {
+    mainWindow.setAlwaysOnTop(true, 'screen-saver');
+    mainWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
+  } else {
+    mainWindow.setAlwaysOnTop(false);
+    mainWindow.setVisibleOnAllWorkspaces(false);
+  }
   
   mainWindow.setSkipTaskbar(false);
   
   // Send initial play state to renderer
   mainWindow.webContents.on('did-finish-load', () => {
     mainWindow.webContents.send('play-state-changed', isPlaying);
+    mainWindow.webContents.send('theme-changed', currentTheme);
+    mainWindow.webContents.send('pin-state-changed', isPinned);
+    const queueData = getCurrentQueue();
+    if (queueData) {
+      mainWindow.webContents.send('queue-updated', queueData);
+    }
   });
 
   // and load the index.html of the app.
@@ -99,12 +170,8 @@ const createWindow = () => {
   // Open the DevTools.
   mainWindow.webContents.openDevTools();
 
-  // Set initial mouse ignore state
-  if (isPinned) {
-    mainWindow.setIgnoreMouseEvents(false);
-  } else {
-    mainWindow.setIgnoreMouseEvents(true, { forward: true });
-  }
+  // Always keep mouse events enabled so the window remains interactive
+  mainWindow.setIgnoreMouseEvents(false);
 
   // Show the window after it's ready
   mainWindow.show();
@@ -123,8 +190,48 @@ const createWindow = () => {
       clearTimeout(hideTimeout);
       hideTimeout = null;
     }
+    if (queueServer) {
+      setQueueWindow(null);
+    }
     mainWindow = null;
   });
+};
+
+const applyTheme = (themeKey) => {
+  isSwitchingTheme = true;
+  
+  try {
+    if (themeKey === currentTheme) {
+      mainWindow.webContents.send('theme-changed', currentTheme);
+      return currentTheme;
+    }
+    
+    const wasPinned = isPinned;
+    isPinned = wasPinned;
+    const bounds = mainWindow.getBounds();
+    
+    mainWindow.destroy();
+    currentTheme = themeKey;
+    createWindow({
+      theme: themeKey,
+      bounds
+    });
+
+    // Restart mouse tracking to restore hide/show behaviour after recreating the window
+    startMouseTracking();
+    
+    // Explicitly restore pin state and mouse interaction
+    isPinned = wasPinned;
+    mainWindow.setIgnoreMouseEvents(false);
+    if (isPinned) {
+      isSidebarVisible = true;
+    }
+    mainWindow.webContents.send('pin-state-changed', isPinned);
+
+    return currentTheme;
+  } finally {
+    isSwitchingTheme = false;
+  }
 };
 
 // Function to start mouse tracking
@@ -340,6 +447,9 @@ const togglePin = () => {
     if (!mainWindow.isVisible()) {
       mainWindow.show();
     }
+    // Ensure window accepts mouse events while pinned
+    mainWindow.setIgnoreMouseEvents(false);
+    isSidebarVisible = true;
     // Clear any pending hide/show timeouts
     if (hideTimeout) {
       clearTimeout(hideTimeout);
@@ -369,7 +479,8 @@ const togglePin = () => {
     const workArea = activeDisplay.workArea;
     const currentBounds = mainWindow.getBounds();
     const targetWidth = getTargetWidth(workArea);
-    
+    mainWindow.setIgnoreMouseEvents(false);
+
     // Determine which side is closer (left or right)
     const distToLeft = Math.abs(currentBounds.x - workArea.x);
     const distToRight = Math.abs((currentBounds.x + currentBounds.width) - (workArea.x + workArea.width));
@@ -510,7 +621,7 @@ const initializeWindowSize = () => {
   
   const workArea = activeDisplay.workArea;
   const targetWidth = getTargetWidth(workArea);
-  
+
   // Set the window to the correct size and position based on current side
   const targetX = currentSide === 'left' ? workArea.x : workArea.x + workArea.width - targetWidth;
   
@@ -542,6 +653,11 @@ app.whenReady().then(() => {
   ipcMain.handle('toggle-pin', () => {
     togglePin();
     return isPinned;
+  });
+
+  ipcMain.handle('apply-theme', (event, themeKey) => {
+    applyTheme(themeKey);
+    return currentTheme;
   });
 
   ipcMain.on('toggle-play-pause', () => {
@@ -595,7 +711,8 @@ app.whenReady().then(() => {
 // for applications and their menu bar to stay active until the user quits
 // explicitly with Cmd + Q.
 app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') {
+  // Don't quit during theme changes
+  if (!isSwitchingTheme && process.platform !== 'darwin') {
     app.quit();
   }
 });
