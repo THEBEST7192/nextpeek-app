@@ -8,6 +8,13 @@ body {
   overflow-y: auto;
 }
 
+body[data-theme='transparent'] #titlebar {
+  background-color: rgba(0, 0, 0, 0.56);
+  backdrop-filter: blur(44px);
+  -webkit-backdrop-filter: blur(44px);
+  border-bottom-color: rgba(255, 255, 255, 0.16);
+}
+
 body[data-theme='solid'] {
   background-color: rgba(18, 18, 18, 1);
 }
@@ -30,7 +37,10 @@ body[data-theme='transparent'] {
   height: 61px;
   width: 100%;
   -webkit-app-region: drag;
-  background-color: rgba(0, 0, 0, 0.38);
+  background-color: rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   overflow: hidden;
   display: flex;
   align-items: center;
@@ -257,6 +267,11 @@ body[data-theme='transparent'] {
   display: flex;
   flex-direction: column;
   width: 100%; 
+}
+
+.now-playing-section .queue-item:first-child,
+.now-playing-section .no-playing-message {
+  margin-bottom: 5px;
 }
 
 .no-playing-message {
