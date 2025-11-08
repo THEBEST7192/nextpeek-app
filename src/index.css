@@ -82,6 +82,48 @@ body[data-theme='transparent'] {
   margin-right: 15px;
 }
 
+.titlebar-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  cursor: pointer;
+  -webkit-app-region: no-drag;
+  position: relative;
+  transition: background-color 0.2s ease;
+}
+
+.titlebar-button::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 34px;
+  height: 34px;
+  transform: translate(-50%, -50%);
+  border-radius: 10px;
+  background-color: rgba(255, 255, 255, 0.08);
+  opacity: 0;
+  transition: opacity 0.2s ease, background-color 0.2s ease;
+  pointer-events: none;
+}
+
+.titlebar-button:hover,
+.titlebar-button:focus-visible {
+  outline: none;
+}
+
+.titlebar-button:hover::after,
+.titlebar-button:focus-visible::after {
+  opacity: 1;
+  background-color: rgba(255, 255, 255, 0.10);
+}
+
+.titlebar-button:active::after {
+  opacity: 1;
+  background-color: rgba(255, 255, 255, 0.16);
+}
+
 #theme-toggle-button {
   -webkit-app-region: no-drag;
   background-color: rgba(255, 255, 255, 0.08);
@@ -124,31 +166,31 @@ body[data-theme='transparent'] {
 
 /* Responsive behavior - hide buttons from left to right when resizing */
 @media (max-width: 300px) {
-  #prev-button {
+  .titlebar-button--prev {
     display: none;
   }
 }
 
 @media (max-width: 250px) {
-  #next-button {
+  .titlebar-button--next {
     display: none;
   }
 }
 
 @media (max-width: 200px) {
-  #play-pause-button {
+  .titlebar-button--play {
     display: none;
   }
 }
 
 @media (max-width: 150px) {
-  #minimize-button {
+  .titlebar-button--minimize {
     display: none;
   }
 }
 
 @media (max-width: 70px) {
-  #pin-button {
+  .titlebar-button--pin {
     display: none;
   }
 }
