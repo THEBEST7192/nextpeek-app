@@ -1,6 +1,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import NowPlaying from './components/NowPlaying.jsx';
+import SettingsModal from './components/SettingsModal.jsx';
 import playIcon from './assets/icons/play.svg';
 import pauseIcon from './assets/icons/pause.svg';
 import pinIcon from './assets/icons/pin.svg';
@@ -19,17 +20,16 @@ document.addEventListener('DOMContentLoaded', () => {
   const startBtn = document.getElementById('spotify-login-btn');
   const loginScreen = document.getElementById('login-screen');
   const startBtnTextEl = document.getElementById('spotify-login-text');
+  const loginSettingsBtn = document.getElementById('login-settings-button');
   const rootElement = document.getElementById('root');
   const root = ReactDOM.createRoot(rootElement);
-  const themeToggleButton = document.getElementById('theme-toggle-button');
   let currentTheme = document.body.dataset.theme || 'solid';
+  let isLoginSettingsOpen = false;
+  let loginSettingsRoot = null;
 
   const updateThemeUI = (theme) => {
     currentTheme = theme;
     document.body.dataset.theme = theme;
-    if (themeToggleButton) {
-      themeToggleButton.textContent = theme === 'solid' ? 'Transparent Mode' : 'Solid Mode';
-    }
   };
 
   updateThemeUI(currentTheme);
@@ -40,10 +40,36 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  if (themeToggleButton && window.electronAPI?.toggleTheme) {
-    themeToggleButton.addEventListener('click', () => {
-      const nextTheme = currentTheme === 'solid' ? 'transparent' : 'solid';
-      window.electronAPI.toggleTheme(nextTheme);
+  const renderLoginSettingsModal = () => {
+    if (!loginSettingsRoot) {
+      const modalContainer = document.createElement('div');
+      document.body.appendChild(modalContainer);
+      loginSettingsRoot = ReactDOM.createRoot(modalContainer);
+    }
+
+    loginSettingsRoot.render(
+      <React.StrictMode>
+        <SettingsModal
+          isOpen={isLoginSettingsOpen}
+          onClose={() => {
+            isLoginSettingsOpen = false;
+            renderLoginSettingsModal();
+          }}
+          currentTheme={currentTheme}
+          onThemeChange={(themeKey) => {
+            if (window.electronAPI?.toggleTheme) {
+              window.electronAPI.toggleTheme(themeKey);
+            }
+          }}
+        />
+      </React.StrictMode>
+    );
+  };
+
+  if (loginSettingsBtn) {
+    loginSettingsBtn.addEventListener('click', () => {
+      isLoginSettingsOpen = true;
+      renderLoginSettingsModal();
     });
   }
 

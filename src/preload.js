@@ -25,8 +25,17 @@ contextBridge.exposeInMainWorld('electronAPI', {
     }
   },
   toggleTheme: (themeKey) => ipcRenderer.invoke('apply-theme', themeKey),
-  onThemeChange: (callback) => ipcRenderer.on('theme-changed', callback),
-  removeThemeChangeListener: () => ipcRenderer.removeAllListeners('theme-changed'),
+  onThemeChange: (callback) => {
+    ipcRenderer.on('theme-changed', callback);
+    return () => ipcRenderer.removeListener('theme-changed', callback);
+  },
+  removeThemeChangeListener: (callback) => {
+    if (callback) {
+      ipcRenderer.removeListener('theme-changed', callback);
+    } else {
+      ipcRenderer.removeAllListeners('theme-changed');
+    }
+  },
   // Queue service
   startQueueListener: () => ipcRenderer.invoke('start-queue-listener'),
   onQueueUpdated: (callback) => ipcRenderer.on('queue-updated', callback),

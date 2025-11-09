@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import SearchBar from './SearchBar';
 import playIcon from '../assets/icons/play.svg';
 import pauseIcon from '../assets/icons/pause.svg';
+import SettingsModal from './SettingsModal.jsx';
 
 const failedAlbumCoverUrls = new Set();
 
@@ -25,6 +26,8 @@ const NowPlaying = () => {
   const [currentlyPlaying, setCurrentlyPlaying] = useState(null);
   const [queue, setQueue] = useState([]);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [currentTheme, setCurrentTheme] = useState(() => document.body.dataset.theme || 'solid');
   const manualChangeTimeout = useRef(null);
   const lastSpotifyState = useRef(null);
 
@@ -79,6 +82,26 @@ const NowPlaying = () => {
           unsubscribe();
         } else {
           window.electronAPI.removePlayStateListener?.(handler);
+        }
+      };
+    }
+
+    return undefined;
+  }, []);
+
+  useEffect(() => {
+    if (window.electronAPI?.onThemeChange) {
+      const handler = (event, themeKey) => {
+        setCurrentTheme(themeKey);
+      };
+
+      const unsubscribe = window.electronAPI.onThemeChange(handler);
+
+      return () => {
+        if (typeof unsubscribe === 'function') {
+          unsubscribe();
+        } else {
+          window.electronAPI.removeThemeChangeListener?.(handler);
         }
       };
     }
@@ -208,7 +231,10 @@ const NowPlaying = () => {
 
   return (
     <div className="now-playing">
-      <SearchBar onPlaylistSelect={handlePlaylistSelect} />
+      <SearchBar
+        onPlaylistSelect={handlePlaylistSelect}
+        onSettingsClick={() => setIsSettingsOpen(true)}
+      />
       <h2 className="section-title">Now Playing</h2>
       <div className="now-playing-section">
         {currentlyPlaying && currentlyPlaying.title ? (
@@ -240,6 +266,16 @@ const NowPlaying = () => {
           <p className="queue-empty-message">Queue is empty</p>
         )}
       </div>
+      <SettingsModal
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
+        currentTheme={currentTheme}
+        onThemeChange={(themeKey) => {
+          if (window.electronAPI?.toggleTheme) {
+            window.electronAPI.toggleTheme(themeKey);
+          }
+        }}
+      />
     </div>
   );
 };
