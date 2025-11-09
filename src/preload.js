@@ -13,8 +13,17 @@ contextBridge.exposeInMainWorld('electronAPI', {
   snapWindow: () => ipcRenderer.send('snap-window'),
   onPinStateChange: (callback) => ipcRenderer.on('pin-state-changed', callback),
   removePinStateListener: () => ipcRenderer.removeAllListeners('pin-state-changed'),
-  onPlayStateChange: (callback) => ipcRenderer.on('play-state-changed', callback),
-  removePlayStateListener: () => ipcRenderer.removeAllListeners('play-state-changed'),
+  onPlayStateChange: (callback) => {
+    ipcRenderer.on('play-state-changed', callback);
+    return () => ipcRenderer.removeListener('play-state-changed', callback);
+  },
+  removePlayStateListener: (callback) => {
+    if (callback) {
+      ipcRenderer.removeListener('play-state-changed', callback);
+    } else {
+      ipcRenderer.removeAllListeners('play-state-changed');
+    }
+  },
   toggleTheme: (themeKey) => ipcRenderer.invoke('apply-theme', themeKey),
   onThemeChange: (callback) => ipcRenderer.on('theme-changed', callback),
   removeThemeChangeListener: () => ipcRenderer.removeAllListeners('theme-changed'),

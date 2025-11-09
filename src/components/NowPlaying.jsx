@@ -1,7 +1,9 @@
-import React, { useState, useEffect } from 'react';
-import SongDisplay from './SongDisplay.jsx';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import SearchBar from './SearchBar';
 import playIcon from '../assets/icons/play.svg';
+import pauseIcon from '../assets/icons/pause.svg';
+
+const failedAlbumCoverUrls = new Set();
 
 const getInitials = (title = '') => {
   const trimmed = title.trim();
@@ -22,13 +24,24 @@ const getInitials = (title = '') => {
 const NowPlaying = () => {
   const [currentlyPlaying, setCurrentlyPlaying] = useState(null);
   const [queue, setQueue] = useState([]);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const manualChangeTimeout = useRef(null);
+  const lastSpotifyState = useRef(null);
 
   useEffect(() => {
     // Listen for queue updates from the main process
     if (window.electronAPI && window.electronAPI.onQueueUpdated) {
       const handleQueueUpdate = (event, data) => {
-        if (data.nowPlaying) {
+        if (data.nowPlaying && data.nowPlaying.title) {
           setCurrentlyPlaying(data.nowPlaying);
+          if (typeof data.nowPlaying.isPlaying === 'boolean') {
+            setIsPlaying(data.nowPlaying.isPlaying);
+            lastSpotifyState.current = data.nowPlaying.isPlaying;
+          }
+        } else {
+          setCurrentlyPlaying(null);
+          setIsPlaying(false);
+          lastSpotifyState.current = null;
         }
         if (data.queue) {
           setQueue(data.queue);
@@ -46,6 +59,54 @@ const NowPlaying = () => {
     }
   }, []);
 
+  useEffect(() => {
+    if (window.electronAPI?.onPlayStateChange) {
+      const handler = (event, playState) => {
+        lastSpotifyState.current = playState;
+        if (!manualChangeTimeout.current) {
+          setIsPlaying(playState);
+        }
+      };
+
+      const unsubscribe = window.electronAPI.onPlayStateChange(handler);
+
+      return () => {
+        if (manualChangeTimeout.current) {
+          clearTimeout(manualChangeTimeout.current);
+          manualChangeTimeout.current = null;
+        }
+        if (typeof unsubscribe === 'function') {
+          unsubscribe();
+        } else {
+          window.electronAPI.removePlayStateListener?.(handler);
+        }
+      };
+    }
+
+    return undefined;
+  }, []);
+
+  const handleTogglePlayPause = useCallback(() => {
+    if (!window.electronAPI?.togglePlayPause) {
+      return;
+    }
+
+    window.electronAPI.togglePlayPause();
+
+    setIsPlaying((prev) => !prev);
+
+    if (manualChangeTimeout.current) {
+      clearTimeout(manualChangeTimeout.current);
+    }
+
+    manualChangeTimeout.current = setTimeout(() => {
+      if (lastSpotifyState.current !== null) {
+        setIsPlaying(lastSpotifyState.current);
+      }
+      manualChangeTimeout.current = null;
+    }, 500);
+  }, []);
+
   // Custom renderer for queue items
   const getImageUrl = (uri) => {
     if (uri && uri.startsWith('spotify:image:')) {
@@ -54,21 +115,40 @@ const NowPlaying = () => {
     return uri;
   };
 
-  const SongArt = ({ albumCoverUrl, title }) => {
-    const [isImageError, setIsImageError] = useState(false);
+  const SongArt = ({ albumCoverUrl, title, overlayIcon = playIcon }) => {
+    const [failureVersion, setFailureVersion] = useState(0);
 
     useEffect(() => {
-      setIsImageError(false);
+      if (albumCoverUrl && failedAlbumCoverUrls.has(albumCoverUrl)) {
+        setFailureVersion((version) => version + 1);
+      }
     }, [albumCoverUrl]);
+
+    const effectiveUrl = useMemo(() => {
+      if (!albumCoverUrl) {
+        return null;
+      }
+      if (failedAlbumCoverUrls.has(albumCoverUrl)) {
+        return null;
+      }
+      return albumCoverUrl;
+    }, [albumCoverUrl, failureVersion]);
+
+    const handleImageError = () => {
+      if (albumCoverUrl) {
+        failedAlbumCoverUrls.add(albumCoverUrl);
+        setFailureVersion((version) => version + 1);
+      }
+    };
 
     return (
       <div className="song-art">
-        {albumCoverUrl && !isImageError ? (
+        {effectiveUrl ? (
           <img
-            src={albumCoverUrl}
+            src={effectiveUrl}
             alt={title}
             className="song-album-art"
-            onError={() => setIsImageError(true)}
+            onError={handleImageError}
           />
         ) : (
           <div className="song-art-placeholder" aria-hidden="true">
@@ -76,7 +156,7 @@ const NowPlaying = () => {
           </div>
         )}
         <div className="song-art-hover">
-          <img src={playIcon} alt="" aria-hidden="true" />
+          <img src={overlayIcon} alt="" aria-hidden="true" />
         </div>
       </div>
     );
@@ -132,18 +212,12 @@ const NowPlaying = () => {
       <h2 className="section-title">Now Playing</h2>
       <div className="now-playing-section">
         {currentlyPlaying && currentlyPlaying.title ? (
-          <div
-            className="queue-item"
-            onClick={() => {
-              if (window.electronAPI?.togglePlayPause) {
-                window.electronAPI.togglePlayPause();
-              }
-            }}
-          >
+          <div className="queue-item" onClick={handleTogglePlayPause}>
             <div className="song-item">
               <SongArt
                 albumCoverUrl={getImageUrl(currentlyPlaying.album_cover)}
                 title={currentlyPlaying.title}
+                overlayIcon={isPlaying ? pauseIcon : playIcon}
               />
               <div className="song-details">
                 <p className="song-title truncate-text">{currentlyPlaying.title}</p>
