@@ -3,6 +3,14 @@
 // ==/UserScript==
 
 (async function QueueBridge() {
+  let lastKnownContextUri = null;
+
+  const updateKnownContext = (contextUri) => {
+    if (contextUri && !contextUri.startsWith('spotify:track:')) {
+      lastKnownContextUri = contextUri;
+    }
+  };
+
   while (!Spicetify?.Player || !Spicetify?.CosmosAsync) {
     await new Promise(r => setTimeout(r, 500));
   }
@@ -14,6 +22,11 @@
       queue = { queue: { next_tracks: Spicetify.Queue?.nextTracks || [] } };
 
       const current = Spicetify.Player.data?.item?.metadata;
+      const currentContextUri = Spicetify.Queue?.contextUri
+        || Spicetify.Player.data?.context_uri
+        || Spicetify.Player.data?.item?.metadata?.context_uri;
+
+      updateKnownContext(currentContextUri);
 
       const nowPlaying = current
         ? {
@@ -109,6 +122,12 @@
                 Spicetify.Player.data?.context_uri ||
                 Spicetify.Player.data?.item?.metadata?.context_uri;
 
+              updateKnownContext(contextUri);
+
+              const effectiveContextUri = (!contextUri || contextUri.startsWith('spotify:track:'))
+                ? lastKnownContextUri
+                : contextUri;
+
               const queueSources = [
                 ...(Spicetify.Queue?.queue ?? []),
                 ...(Spicetify.Queue?.nextTracks ?? [])
@@ -128,26 +147,14 @@
 
               const trackUid = matchTrack?.contextTrack?.uid;
 
-              if (contextUri && trackUid && Spicetify.Platform?.PlayerAPI?.skipTo) {
+              // Only use skipTo to avoid single-track repeat caused by playUri
+              if (trackUid && effectiveContextUri && Spicetify.Platform?.PlayerAPI?.skipTo) {
                 await Spicetify.Platform.PlayerAPI.skipTo({
                   uri: data.uri,
                   uid: trackUid,
-                  contextUri,
+                  contextUri: effectiveContextUri,
                 });
-                return;
               }
-
-              if (!contextUri) {
-                await Spicetify.Player.playUri(data.uri);
-                return;
-              }
-
-              await Spicetify.Player.playUri(data.uri, {
-                context: contextUri,
-                shuffleContext: Spicetify.Player.getShuffle(),
-                repeatContext: Spicetify.Player.getRepeat() === 1,
-                repeatTrack: Spicetify.Player.getRepeat() === 2,
-              });
             } catch (err) {
               console.error("Queue playback failed:", err);
             }
