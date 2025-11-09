@@ -1,6 +1,23 @@
 import React, { useState, useEffect } from 'react';
 import SongDisplay from './SongDisplay.jsx';
 import SearchBar from './SearchBar';
+import playIcon from '../assets/icons/play.svg';
+
+const getInitials = (title = '') => {
+  const trimmed = title.trim();
+  if (!trimmed) {
+    return '?';
+  }
+
+  const initials = trimmed
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((word) => word[0] || '')
+    .join('')
+    .toUpperCase();
+
+  return initials || '?';
+};
 
 const NowPlaying = () => {
   const [currentlyPlaying, setCurrentlyPlaying] = useState(null);
@@ -37,6 +54,34 @@ const NowPlaying = () => {
     return uri;
   };
 
+  const SongArt = ({ albumCoverUrl, title }) => {
+    const [isImageError, setIsImageError] = useState(false);
+
+    useEffect(() => {
+      setIsImageError(false);
+    }, [albumCoverUrl]);
+
+    return (
+      <div className="song-art">
+        {albumCoverUrl && !isImageError ? (
+          <img
+            src={albumCoverUrl}
+            alt={title}
+            className="song-album-art"
+            onError={() => setIsImageError(true)}
+          />
+        ) : (
+          <div className="song-art-placeholder" aria-hidden="true">
+            {getInitials(title)}
+          </div>
+        )}
+        <div className="song-art-hover">
+          <img src={playIcon} alt="" aria-hidden="true" />
+        </div>
+      </div>
+    );
+  };
+
   const renderQueueItem = (song, index) => {
     if (!song) return null;
     
@@ -57,7 +102,7 @@ const NowPlaying = () => {
         }}
       >
         <div className="song-item">
-          {albumCoverUrl && <img src={albumCoverUrl} alt={song.title} className="song-album-art" />}
+          <SongArt albumCoverUrl={albumCoverUrl} title={song.title} />
           <div className="song-details">
             <p className="song-title truncate-text">{song.title}</p>
             <p className="song-artist">{song.artist}</p>
@@ -96,7 +141,10 @@ const NowPlaying = () => {
             }}
           >
             <div className="song-item">
-              {getImageUrl(currentlyPlaying.album_cover) && <img src={getImageUrl(currentlyPlaying.album_cover)} alt={currentlyPlaying.title} className="song-album-art" />}
+              <SongArt
+                albumCoverUrl={getImageUrl(currentlyPlaying.album_cover)}
+                title={currentlyPlaying.title}
+              />
               <div className="song-details">
                 <p className="song-title truncate-text">{currentlyPlaying.title}</p>
                 <p className="song-artist">{currentlyPlaying.artist}</p>
