@@ -175,6 +175,427 @@ body[data-theme='straightAlly'] #content {
   z-index: 1;
 }
 
+/* Text color adjustments for readability on different backgrounds */
+/* Light backgrounds - use dark text */
+body[data-theme='trans'],
+body[data-theme='gay'],
+body[data-theme='lesbian'],
+body[data-theme='aroace'],
+body[data-theme='asexual'] {
+  color: #000000;
+}
+
+body[data-theme='straightAlly'] {
+  color: #000000;
+}
+
+/* Rainbow text for straight ally theme */
+body[data-theme='straightAlly'] #titlebar,
+body[data-theme='straightAlly'] #content,
+body[data-theme='straightAlly'] .section-title,
+body[data-theme='straightAlly'] .settings-modal__header h2,
+body[data-theme='straightAlly'] .settings-section__header h3,
+body[data-theme='straightAlly'] .settings-theme-option__title,
+body[data-theme='straightAlly'] h1,
+body[data-theme='straightAlly'] h2,
+body[data-theme='straightAlly'] h3,
+body[data-theme='straightAlly'] p,
+body[data-theme='straightAlly'] span,
+body[data-theme='straightAlly'] .song-title,
+body[data-theme='straightAlly'] .song-artist {
+  background: linear-gradient(90deg, 
+    #e40303 0%, 
+    #ff8c00 16.67%, 
+    #ffed00 33.33%, 
+    #008026 50%, 
+    #24408e 66.67%, 
+    #732982 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+}
+
+body[data-theme='trans'] #titlebar,
+body[data-theme='gay'] #titlebar,
+body[data-theme='lesbian'] #titlebar,
+body[data-theme='aroace'] #titlebar {
+  background-color: rgba(0, 0, 0, 0.2);
+  border-bottom-color: rgba(0, 0, 0, 0.16);
+}
+
+body[data-theme='straightAlly'] #titlebar {
+  background-color: rgba(0, 0, 0, 0.2);
+  border-bottom-color: rgba(255, 255, 255, 0.16);
+}
+
+body[data-theme='asexual'] #titlebar {
+  background-color: rgba(255, 255, 255, 0.2);
+  border-bottom-color: rgba(255, 255, 255, 0.16);
+}
+
+body[data-theme='trans'] #titlebar img,
+body[data-theme='gay'] #titlebar img,
+body[data-theme='lesbian'] #titlebar img,
+body[data-theme='aroace'] #titlebar img,
+body[data-theme='asexual'] #titlebar img {
+  filter: invert(0%);
+}
+
+body[data-theme='straightAlly'] #titlebar img {
+  filter: invert(100%);
+}
+
+body[data-theme='trans'] .titlebar-button::after,
+body[data-theme='gay'] .titlebar-button::after,
+body[data-theme='lesbian'] .titlebar-button::after,
+body[data-theme='aroace'] .titlebar-button::after,
+body[data-theme='asexual'] .titlebar-button::after {
+  background-color: rgba(0, 0, 0, 0.08);
+}
+
+body[data-theme='straight'] #close-button img {
+  filter: invert(0%);
+}
+
+body[data-theme='straight'] #close-button::after {
+  background-color: rgba(0, 0, 0, 0.12);
+}
+
+body[data-theme='straight'] #close-button:hover::after,
+body[data-theme='straight'] #close-button:focus-visible::after {
+  background-color: rgba(0, 0, 0, 0.18);
+}
+
+body[data-theme='straight'] #close-button:active::after {
+  background-color: rgba(0, 0, 0, 0.24);
+}
+
+body[data-theme='straightAlly'] .titlebar-button::after {
+  background-color: rgba(255, 255, 255, 0.08);
+}
+
+body[data-theme='trans'] .titlebar-button:hover::after,
+body[data-theme='gay'] .titlebar-button:hover::after,
+body[data-theme='lesbian'] .titlebar-button:hover::after,
+body[data-theme='aroace'] .titlebar-button:hover::after,
+body[data-theme='asexual'] .titlebar-button:hover::after,
+body[data-theme='trans'] .titlebar-button:focus-visible::after,
+body[data-theme='gay'] .titlebar-button:focus-visible::after,
+body[data-theme='lesbian'] .titlebar-button:focus-visible::after,
+body[data-theme='aroace'] .titlebar-button:focus-visible::after,
+body[data-theme='asexual'] .titlebar-button:focus-visible::after {
+  background-color: rgba(0, 0, 0, 0.14);
+}
+
+body[data-theme='straightAlly'] .titlebar-button:hover::after,
+body[data-theme='straightAlly'] .titlebar-button:focus-visible::after {
+  background-color: rgba(255, 255, 255, 0.14);
+}
+
+body[data-theme='trans'] .titlebar-button:active::after,
+body[data-theme='gay'] .titlebar-button:active::after,
+body[data-theme='lesbian'] .titlebar-button:active::after,
+body[data-theme='aroace'] .titlebar-button:active::after,
+body[data-theme='asexual'] .titlebar-button:active::after {
+  background-color: rgba(0, 0, 0, 0.20);
+}
+
+body[data-theme='straightAlly'] .titlebar-button:active::after {
+  background-color: rgba(255, 255, 255, 0.20);
+}
+
+body[data-theme='trans'] #theme-toggle-button,
+body[data-theme='gay'] #theme-toggle-button,
+body[data-theme='lesbian'] #theme-toggle-button,
+body[data-theme='aroace'] #theme-toggle-button,
+body[data-theme='asexual'] #theme-toggle-button {
+  background-color: rgba(0, 0, 0, 0.08);
+  border: 1px solid rgba(0, 0, 0, 0.2);
+  color: #000000;
+}
+
+body[data-theme='straightAlly'] #theme-toggle-button {
+  background-color: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #ffffff;
+}
+
+body[data-theme='trans'] #theme-toggle-button:hover,
+body[data-theme='gay'] #theme-toggle-button:hover,
+body[data-theme='lesbian'] #theme-toggle-button:hover,
+body[data-theme='aroace'] #theme-toggle-button:hover,
+body[data-theme='trans'] #theme-toggle-button:focus,
+body[data-theme='gay'] #theme-toggle-button:focus,
+body[data-theme='lesbian'] #theme-toggle-button:focus,
+body[data-theme='aroace'] #theme-toggle-button:focus,
+body[data-theme='asexual'] #theme-toggle-button:hover,
+body[data-theme='asexual'] #theme-toggle-button:focus {
+  background-color: rgba(0, 0, 0, 0.14);
+  border-color: rgba(0, 0, 0, 0.35);
+}
+
+body[data-theme='straightAlly'] #theme-toggle-button:hover,
+body[data-theme='straightAlly'] #theme-toggle-button:focus {
+  background-color: rgba(255, 255, 255, 0.14);
+  border-color: rgba(255, 255, 255, 0.35);
+}
+
+body[data-theme='trans'] #theme-toggle-button:active,
+body[data-theme='gay'] #theme-toggle-button:active,
+body[data-theme='lesbian'] #theme-toggle-button:active,
+body[data-theme='aroace'] #theme-toggle-button:active,
+body[data-theme='asexual'] #theme-toggle-button:active {
+  background-color: rgba(0, 0, 0, 0.20);
+}
+
+body[data-theme='straightAlly'] #theme-toggle-button:active {
+  background-color: rgba(255, 255, 255, 0.20);
+}
+
+/* Dark backgrounds - use white text (default) */
+body[data-theme='rainbow'],
+body[data-theme='bi'],
+body[data-theme='straight'] {
+  color: #ffffff;
+}
+
+/* Darker song containers for straight theme */
+body[data-theme='straight'] .queue-item {
+  background-color: rgba(0, 0, 0, 0.25);
+}
+
+body[data-theme='straightAlly'] .queue-item {
+  background-color: rgba(0, 0, 0, 0.25);
+}
+
+
+/* Login screen text color adjustments */
+body[data-theme='trans'] #login-screen h1,
+body[data-theme='gay'] #login-screen h1,
+body[data-theme='aroace'] #login-screen h1,
+body[data-theme='lesbian'] #login-screen h1,
+body[data-theme='asexual'] #login-screen h1,
+body[data-theme='straightAlly'] #login-screen h1 {
+  color: #000000;
+}
+
+body[data-theme='trans'] #login-screen h2,
+body[data-theme='gay'] #login-screen h2,
+body[data-theme='aroace'] #login-screen h2,
+body[data-theme='lesbian'] #login-screen h2,
+body[data-theme='asexual'] #login-screen h2,
+body[data-theme='straightAlly'] #login-screen h2 {
+  color: #333333;
+}
+
+body[data-theme='trans'] #login-screen p,
+body[data-theme='gay'] #login-screen p,
+body[data-theme='aroace'] #login-screen p,
+body[data-theme='lesbian'] #login-screen p,
+body[data-theme='asexual'] #login-screen p,
+body[data-theme='straightAlly'] #login-screen p {
+  color: rgba(0, 0, 0, 0.72);
+}
+
+body[data-theme='trans'] #login-settings-button img,
+body[data-theme='gay'] #login-settings-button img,
+body[data-theme='aroace'] #login-settings-button img,
+body[data-theme='lesbian'] #login-settings-button img,
+body[data-theme='asexual'] #login-settings-button img,
+body[data-theme='straightAlly'] #login-settings-button img {
+  filter: invert(0%);
+}
+
+body[data-theme='straight'] #login-settings-button img {
+  filter: invert(0%);
+}
+
+body[data-theme='trans'] .section-title,
+body[data-theme='gay'] .section-title,
+body[data-theme='lesbian'] .section-title,
+body[data-theme='asexual'] .section-title {
+  color: #000000;
+}
+
+body[data-theme='trans'] .no-playing-message,
+body[data-theme='gay'] .no-playing-message,
+body[data-theme='lesbian'] .no-playing-message,
+body[data-theme='asexual'] .no-playing-message,
+body[data-theme='trans'] .queue-empty-message,
+body[data-theme='gay'] .queue-empty-message,
+body[data-theme='lesbian'] .queue-empty-message,
+body[data-theme='asexual'] .queue-empty-message {
+  color: rgba(0, 0, 0, 0.72);
+}
+
+body[data-theme='trans'] .song-art-placeholder,
+body[data-theme='gay'] .song-art-placeholder,
+body[data-theme='lesbian'] .song-art-placeholder,
+body[data-theme='asexual'] .song-art-placeholder {
+  color: rgba(0, 0, 0, 0.72);
+  background: rgba(0, 0, 0, 0.08);
+}
+
+body[data-theme='trans'] .song-title,
+body[data-theme='gay'] .song-title,
+body[data-theme='lesbian'] .song-title,
+body[data-theme='asexual'] .song-title {
+  color: #000000;
+}
+
+body[data-theme='trans'] .song-artist,
+body[data-theme='gay'] .song-artist,
+body[data-theme='lesbian'] .song-artist,
+body[data-theme='asexual'] .song-artist {
+  color: rgba(0, 0, 0, 0.6);
+}
+
+body[data-theme='trans'] .settings-modal,
+body[data-theme='gay'] .settings-modal,
+body[data-theme='aroace'] .settings-modal,
+body[data-theme='lesbian'] .settings-modal,
+body[data-theme='asexual'] .settings-modal,
+body[data-theme='straightAlly'] .settings-modal {
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  color: #000000;
+}
+
+body[data-theme='trans'] .settings-modal__header,
+body[data-theme='gay'] .settings-modal__header,
+body[data-theme='aroace'] .settings-modal__header,
+body[data-theme='lesbian'] .settings-modal__header,
+body[data-theme='asexual'] .settings-modal__header,
+body[data-theme='straightAlly'] .settings-modal__header {
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+body[data-theme='trans'] .settings-modal__header h2,
+body[data-theme='gay'] .settings-modal__header h2,
+body[data-theme='aroace'] .settings-modal__header h2,
+body[data-theme='lesbian'] .settings-modal__header h2,
+body[data-theme='asexual'] .settings-modal__header h2,
+body[data-theme='straightAlly'] .settings-modal__header h2 {
+  color: #000000;
+}
+
+body[data-theme='trans'] .settings-modal__close-button,
+body[data-theme='gay'] .settings-modal__close-button,
+body[data-theme='aroace'] .settings-modal__close-button,
+body[data-theme='lesbian'] .settings-modal__close-button,
+body[data-theme='asexual'] .settings-modal__close-button,
+body[data-theme='straightAlly'] .settings-modal__close-button {
+  color: rgba(0, 0, 0, 0.6);
+}
+
+body[data-theme='trans'] .settings-modal__close-button img,
+body[data-theme='gay'] .settings-modal__close-button img,
+body[data-theme='aroace'] .settings-modal__close-button img,
+body[data-theme='lesbian'] .settings-modal__close-button img,
+body[data-theme='asexual'] .settings-modal__close-button img,
+body[data-theme='straightAlly'] .settings-modal__close-button img {
+  filter: invert(0);
+}
+
+body[data-theme='trans'] .settings-modal__close-button:hover,
+body[data-theme='gay'] .settings-modal__close-button:hover,
+body[data-theme='aroace'] .settings-modal__close-button:hover,
+body[data-theme='lesbian'] .settings-modal__close-button:hover,
+body[data-theme='asexual'] .settings-modal__close-button:hover,
+body[data-theme='straightAlly'] .settings-modal__close-button:hover,
+body[data-theme='trans'] .settings-modal__close-button:focus-visible,
+body[data-theme='gay'] .settings-modal__close-button:focus-visible,
+body[data-theme='aroace'] .settings-modal__close-button:focus-visible,
+body[data-theme='lesbian'] .settings-modal__close-button:focus-visible,
+body[data-theme='asexual'] .settings-modal__close-button:focus-visible,
+body[data-theme='straightAlly'] .settings-modal__close-button:focus-visible {
+  background: rgba(0, 0, 0, 0.08);
+  color: #000000;
+}
+
+body[data-theme='trans'] .settings-modal__close-button:active,
+body[data-theme='gay'] .settings-modal__close-button:active,
+body[data-theme='aroace'] .settings-modal__close-button:active,
+body[data-theme='lesbian'] .settings-modal__close-button:active,
+body[data-theme='asexual'] .settings-modal__close-button:active,
+body[data-theme='straightAlly'] .settings-modal__close-button:active {
+  background: rgba(0, 0, 0, 0.14);
+}
+
+body[data-theme='trans'] .settings-section__header h3,
+body[data-theme='gay'] .settings-section__header h3,
+body[data-theme='aroace'] .settings-section__header h3,
+body[data-theme='lesbian'] .settings-section__header h3,
+body[data-theme='asexual'] .settings-section__header h3,
+body[data-theme='straightAlly'] .settings-section__header h3 {
+  color: #000000;
+}
+
+body[data-theme='trans'] .settings-section__header p,
+body[data-theme='gay'] .settings-section__header p,
+body[data-theme='aroace'] .settings-section__header p,
+body[data-theme='lesbian'] .settings-section__header p,
+body[data-theme='asexual'] .settings-section__header p,
+body[data-theme='straightAlly'] .settings-section__header p {
+  color: rgba(0, 0, 0, 0.6);
+}
+
+body[data-theme='trans'] .settings-theme-option,
+body[data-theme='gay'] .settings-theme-option,
+body[data-theme='aroace'] .settings-theme-option,
+body[data-theme='lesbian'] .settings-theme-option,
+body[data-theme='asexual'] .settings-theme-option,
+body[data-theme='straightAlly'] .settings-theme-option {
+  background: rgba(0, 0, 0, 0.04);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  color: #000000;
+}
+
+body[data-theme='trans'] .settings-theme-option:hover,
+body[data-theme='gay'] .settings-theme-option:hover,
+body[data-theme='aroace'] .settings-theme-option:hover,
+body[data-theme='lesbian'] .settings-theme-option:hover,
+body[data-theme='asexual'] .settings-theme-option:hover,
+body[data-theme='straightAlly'] .settings-theme-option:hover,
+body[data-theme='trans'] .settings-theme-option:focus-visible,
+body[data-theme='gay'] .settings-theme-option:focus-visible,
+body[data-theme='aroace'] .settings-theme-option:focus-visible,
+body[data-theme='lesbian'] .settings-theme-option:focus-visible,
+body[data-theme='asexual'] .settings-theme-option:focus-visible,
+body[data-theme='straightAlly'] .settings-theme-option:focus-visible {
+  border-color: rgba(0, 0, 0, 0.2);
+  background: rgba(0, 0, 0, 0.08);
+}
+
+body[data-theme='trans'] .settings-theme-option--active,
+body[data-theme='gay'] .settings-theme-option--active,
+body[data-theme='aroace'] .settings-theme-option--active,
+body[data-theme='lesbian'] .settings-theme-option--active,
+body[data-theme='asexual'] .settings-theme-option--active,
+body[data-theme='straightAlly'] .settings-theme-option--active {
+  border-color: rgba(0, 0, 0, 0.36);
+  background: rgba(0, 0, 0, 0.12);
+}
+
+body[data-theme='trans'] .settings-theme-option__title,
+body[data-theme='gay'] .settings-theme-option__title,
+body[data-theme='aroace'] .settings-theme-option__title,
+body[data-theme='lesbian'] .settings-theme-option__title,
+body[data-theme='asexual'] .settings-theme-option__title,
+body[data-theme='straightAlly'] .settings-theme-option__title {
+  color: #000000;
+}
+
+body[data-theme='trans'] .settings-theme-option__description,
+body[data-theme='gay'] .settings-theme-option__description,
+body[data-theme='aroace'] .settings-theme-option__description,
+body[data-theme='lesbian'] .settings-theme-option__description,
+body[data-theme='asexual'] .settings-theme-option__description,
+body[data-theme='straightAlly'] .settings-theme-option__description {
+  color: rgba(0, 0, 0, 0.6);
+}
+
 /* Invisible (Metal Gear refrence) scrollbar styling */
 ::-webkit-scrollbar {
   width: 0px;
@@ -384,7 +805,7 @@ body[data-theme='straightAlly'] #content {
   font-size: 1rem;
   line-height: 1.5;
   margin: 0 0 1rem 0;
-  color: #a7a7a7;
+  color: rgba(255, 255, 255, 0.72);
 }
 
 #spotify-login-btn {
@@ -637,6 +1058,14 @@ body[data-theme='straightAlly'] #content {
   border-radius: 8px;
   cursor: pointer;
   transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.settings-modal__close-button img {
+  width: 18px;
+  height: 18px;
+  display: block;
+  filter: invert(1);
+  transition: filter 0.2s ease;
 }
 
 .settings-modal__close-button:hover,

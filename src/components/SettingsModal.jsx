@@ -1,4 +1,5 @@
 import React, { useEffect, useCallback } from 'react';
+import closeIcon from '../assets/icons/close.svg';
 
 const SettingsModal = ({ isOpen, onClose, currentTheme, onThemeChange }) => {
   const handleClose = useCallback(() => {
@@ -72,7 +73,7 @@ const SettingsModal = ({ isOpen, onClose, currentTheme, onThemeChange }) => {
             onClick={handleClose}
             aria-label="Close settings"
           >
-            ×
+            <img src={closeIcon} alt="" aria-hidden="true" />
           </button>
         </div>
 
