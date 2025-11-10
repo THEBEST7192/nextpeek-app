@@ -23,6 +23,158 @@ body[data-theme='transparent'] {
   background-color: rgba(18, 18, 18, 0.7);
 }
 
+/* Pride Theme Styles */
+body[data-theme='rainbow'] {
+  background: linear-gradient(180deg, 
+    #e40303 0%, 
+    #ff8c00 16.67%, 
+    #ffed00 33.33%, 
+    #008026 50%, 
+    #24408e 66.67%, 
+    #732982 83.33%, 
+    #732982 100%);
+  background-attachment: fixed;
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+}
+
+body[data-theme='gay'] {
+  background: linear-gradient(180deg, 
+    #078d70 0%, 
+    #26ceaa 25%, 
+    #98e8c1 50%, 
+    #ffffff 62.5%, 
+    #7bade2 75%, 
+    #5049cc 87.5%, 
+    #3d1a78 100%);
+  background-attachment: fixed;
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+}
+
+body[data-theme='trans'] {
+  background: linear-gradient(180deg, 
+    #5bcefa 0%, 
+    #f5a9b8 20%, 
+    #ffffff 40%, 
+    #f5a9b8 60%, 
+    #5bcefa 80%, 
+    #5bcefa 100%);
+  background-attachment: fixed;
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+}
+
+body[data-theme='lesbian'] {
+  background: linear-gradient(180deg, 
+    #d62900 0%, 
+    #ff9b56 20%, 
+    #ffffff 40%, 
+    #d462a6 60%, 
+    #a40062 80%, 
+    #a40062 100%);
+  background-attachment: fixed;
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+}
+
+body[data-theme='asexual'] {
+  background: linear-gradient(180deg, 
+    #000000 0%, 
+    #a3a3a3 25%, 
+    #ffffff 50%, 
+    #800080 75%, 
+    #800080 100%);
+  background-attachment: fixed;
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+}
+
+body[data-theme='aroace'] {
+  background: linear-gradient(180deg, 
+    #e28c00 0%, 
+    #eccd00 20%, 
+    #ffffff 40%, 
+    #62aedc 60%, 
+    #203856 80%, 
+    #203856 100%);
+  background-attachment: fixed;
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+}
+
+body[data-theme='bi'] {
+  background: linear-gradient(180deg, 
+    #d60270 0%, 
+    #d60270 40%, 
+    #9b4f96 50%, 
+    #0038a8 60%, 
+    #0038a8 100%);
+  background-attachment: fixed;
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+}
+
+body[data-theme='straight'] {
+  background: linear-gradient(180deg, 
+    #000000 0%, 
+    #000000 20%, 
+    #808080 40%, 
+    #ffffff 60%, 
+    #ffffff 100%);
+  background-attachment: fixed;
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+}
+
+body[data-theme='straightAlly'] {
+  background: linear-gradient(180deg, 
+    #000000 0%, 
+    #000000 16.67%, 
+    #808080 33.33%, 
+    #ffffff 50%, 
+    #ffffff 66.67%, 
+    #ffffff 83.33%, 
+    #ffffff 100%);
+  background-attachment: fixed;
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+}
+
+body[data-theme='straightAlly']::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, 
+    transparent 0%, 
+    transparent 45%, 
+    #e40303 45%, 
+    #e40303 47%, 
+    #ff8c00 47%, 
+    #ff8c00 49%, 
+    #ffed00 49%, 
+    #ffed00 51%, 
+    #008026 51%, 
+    #008026 53%, 
+    #24408e 53%, 
+    #24408e 55%, 
+    #732982 55%, 
+    #732982 57%, 
+    transparent 57%, 
+    transparent 100%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+body[data-theme='straightAlly'] #titlebar,
+body[data-theme='straightAlly'] #content {
+  position: relative;
+  z-index: 1;
+}
+
 /* Invisible (Metal Gear refrence) scrollbar styling */
 ::-webkit-scrollbar {
   width: 0px;

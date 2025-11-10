@@ -34,6 +34,15 @@ let lastKnownBounds = null;
 const THEMES = {
   solid: { transparent: false, backgroundColor: '#121212' },
   transparent: { transparent: true, backgroundColor: '#00000000' },
+  rainbow: { transparent: false, backgroundColor: '#00000000' },
+  gay: { transparent: false, backgroundColor: '#00000000' },
+  trans: { transparent: false, backgroundColor: '#00000000' },
+  lesbian: { transparent: false, backgroundColor: '#00000000' },
+  asexual: { transparent: false, backgroundColor: '#00000000' },
+  aroace: { transparent: false, backgroundColor: '#00000000' },
+  bi: { transparent: false, backgroundColor: '#00000000' },
+  straight: { transparent: false, backgroundColor: '#00000000' },
+  straightAlly: { transparent: false, backgroundColor: '#00000000' },
 };
 
 let currentTheme = 'solid';
