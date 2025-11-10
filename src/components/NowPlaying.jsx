@@ -47,7 +47,10 @@ const NowPlaying = () => {
           lastSpotifyState.current = null;
         }
         if (data.queue) {
-          setQueue(data.queue);
+          // Filter out songs after delimiter
+          const delimiterIndex = data.queue.findIndex(song => song.uri === 'spotify:delimiter');
+          const filteredQueue = delimiterIndex >= 0 ? data.queue.slice(0, delimiterIndex) : data.queue;
+          setQueue(filteredQueue);
         }
       };
 
