@@ -28,6 +28,7 @@ const NowPlaying = () => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [currentTheme, setCurrentTheme] = useState(() => document.body.dataset.theme || 'solid');
+  const [customImageTextColor, setCustomImageTextColor] = useState(() => document.body.dataset.customImageTextColor || 'white');
   const manualChangeTimeout = useRef(null);
   const lastSpotifyState = useRef(null);
 
@@ -94,8 +95,21 @@ const NowPlaying = () => {
 
   useEffect(() => {
     if (window.electronAPI?.onThemeChange) {
-      const handler = (event, themeKey) => {
-        setCurrentTheme(themeKey);
+      const handler = (event, payload) => {
+        if (typeof payload === 'string') {
+          setCurrentTheme(payload);
+          return;
+        }
+
+        if (payload && typeof payload === 'object') {
+          if (typeof payload.theme === 'string') {
+            setCurrentTheme(payload.theme);
+          }
+
+          if (typeof payload.customImageTextColor === 'string') {
+            setCustomImageTextColor(payload.customImageTextColor);
+          }
+        }
       };
 
       const unsubscribe = window.electronAPI.onThemeChange(handler);
@@ -232,6 +246,36 @@ const NowPlaying = () => {
     }
   };
 
+  const handleUploadImage = useCallback(async () => {
+    if (!window.electronAPI?.uploadCustomBackground) {
+      return;
+    }
+
+    try {
+      const response = await window.electronAPI.uploadCustomBackground();
+      if (!response?.canceled && response?.theme === 'customImage') {
+        setCurrentTheme(response.theme);
+      }
+    } catch (error) {
+      console.error('Failed to upload custom background image:', error);
+    }
+  }, []);
+
+  const handleCustomImageTextColorChange = useCallback(async (color) => {
+    if (!window.electronAPI?.setCustomImageTextColor) {
+      return;
+    }
+
+    try {
+      const response = await window.electronAPI.setCustomImageTextColor(color);
+      if (response?.success) {
+        setCustomImageTextColor(color);
+      }
+    } catch (error) {
+      console.error('Failed to set custom image text color:', error);
+    }
+  }, []);
+
   return (
     <div className="now-playing">
       <SearchBar
@@ -278,6 +322,9 @@ const NowPlaying = () => {
             window.electronAPI.toggleTheme(themeKey);
           }
         }}
+        onUploadImage={handleUploadImage}
+        customImageTextColor={customImageTextColor}
+        onCustomImageTextColorChange={handleCustomImageTextColorChange}
       />
     </div>
   );

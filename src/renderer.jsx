@@ -24,23 +24,101 @@ document.addEventListener('DOMContentLoaded', () => {
   const rootElement = document.getElementById('root');
   const root = ReactDOM.createRoot(rootElement);
   let currentTheme = document.body.dataset.theme || 'solid';
+  let customImageTextColor = document.body.dataset.customImageTextColor || 'white';
   let isLoginSettingsOpen = false;
   let loginSettingsRoot = null;
+  let renderLoginSettingsModal = () => {};
 
-  const updateThemeUI = (theme) => {
+  const updateThemeUI = (themePayload) => {
+    const payload = typeof themePayload === 'string' ? { theme: themePayload } : themePayload || {};
+    const {
+      theme = 'solid',
+      customImageBase64 = null,
+      customImageTextColor: payloadTextColor = null,
+    } = payload;
+
     currentTheme = theme;
     document.body.dataset.theme = theme;
+
+    const hasCustomBackground = theme === 'customImage' && customImageBase64;
+    const imageUrl = hasCustomBackground ? `data:image/png;base64,${customImageBase64}` : 'none';
+    document.body.style.setProperty('--custom-image-url', `url('${imageUrl}')`);
+    document.body.classList.toggle('has-custom-background', Boolean(hasCustomBackground));
+
+    if (typeof payloadTextColor === 'string') {
+      customImageTextColor = payloadTextColor;
+    }
+
+    if (theme === 'customImage' && typeof customImageTextColor === 'string') {
+      document.body.dataset.customImageTextColor = customImageTextColor;
+    } else {
+      delete document.body.dataset.customImageTextColor;
+    }
+
+    if (isLoginSettingsOpen) {
+      renderLoginSettingsModal();
+    }
   };
 
   updateThemeUI(currentTheme);
 
+  const applyTheme = (themeKey) => {
+    if (!window.electronAPI?.toggleTheme) {
+      return;
+    }
+
+    try {
+      const result = window.electronAPI.toggleTheme(themeKey);
+      if (result?.then) {
+        result.then((payload) => {
+          updateThemeUI(payload);
+        }).catch((error) => {
+          console.error('Failed to apply theme:', error);
+        });
+      }
+    } catch (error) {
+      console.error('Failed to apply theme:', error);
+    }
+  };
+
+  const uploadCustomBackground = async () => {
+    if (!window.electronAPI?.uploadCustomBackground) {
+      return;
+    }
+
+    try {
+      const payload = await window.electronAPI.uploadCustomBackground();
+      if (!payload?.canceled) {
+        updateThemeUI(payload);
+      }
+    } catch (error) {
+      console.error('Failed to upload custom background:', error);
+    }
+  };
+
   if (window.electronAPI?.onThemeChange) {
-    window.electronAPI.onThemeChange((event, themeKey) => {
-      updateThemeUI(themeKey);
+    window.electronAPI.onThemeChange((event, payload) => {
+      updateThemeUI(payload);
     });
   }
 
-  const renderLoginSettingsModal = () => {
+  const setCustomImageTextColor = async (color) => {
+    if (!window.electronAPI?.setCustomImageTextColor) {
+      return;
+    }
+
+    try {
+      const payload = await window.electronAPI.setCustomImageTextColor(color);
+      if (payload?.success) {
+        customImageTextColor = color;
+        updateThemeUI(payload);
+      }
+    } catch (error) {
+      console.error('Failed to set custom image text color:', error);
+    }
+  };
+
+  renderLoginSettingsModal = () => {
     if (!loginSettingsRoot) {
       const modalContainer = document.createElement('div');
       document.body.appendChild(modalContainer);
@@ -57,9 +135,13 @@ document.addEventListener('DOMContentLoaded', () => {
           }}
           currentTheme={currentTheme}
           onThemeChange={(themeKey) => {
-            if (window.electronAPI?.toggleTheme) {
-              window.electronAPI.toggleTheme(themeKey);
-            }
+            updateThemeUI(themeKey);
+            applyTheme(themeKey);
+          }}
+          onUploadImage={uploadCustomBackground}
+          customImageTextColor={customImageTextColor}
+          onCustomImageTextColorChange={(color) => {
+            setCustomImageTextColor(color);
           }}
         />
       </React.StrictMode>

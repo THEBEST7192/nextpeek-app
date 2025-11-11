@@ -1,9 +1,11 @@
-import { app, BrowserWindow, ipcMain, screen, shell } from 'electron';
+import { app, BrowserWindow, ipcMain, screen, shell, dialog } from 'electron';
 import path from 'node:path';
 import started from 'electron-squirrel-startup';
 import crypto from 'node:crypto';
 import dotenv from 'dotenv';
 import http from 'node:http';
+import { promises as fs } from 'node:fs';
+import { pathToFileURL } from 'node:url';
 
 // Import queue service
 import { startQueueServer, sendCommand, getCurrentQueue, setQueueWindow } from './services/queueService.js';
@@ -30,6 +32,9 @@ let currentSide = 'left'; // Track which side the sidebar is docked on
 let queueServer = null; // Queue server instance
 let isSwitchingTheme = false; // Track theme switching state
 let lastKnownBounds = null;
+let customBackgroundImageBase64 = null;
+let customImageTextColor = 'white'; // 'white' or 'black'
+let settingsFilePath = '';
 
 const THEMES = {
   solid: { transparent: false, backgroundColor: '#121212' },
@@ -43,9 +48,70 @@ const THEMES = {
   bi: { transparent: false, backgroundColor: '#00000000' },
   straight: { transparent: false, backgroundColor: '#00000000' },
   straightAlly: { transparent: false, backgroundColor: '#00000000' },
+  customImage: { transparent: false, backgroundColor: '#000000' },
 };
 
 let currentTheme = 'solid';
+
+const getThemePayload = () => ({
+  theme: currentTheme,
+  customImageBase64: customBackgroundImageBase64,
+  customImageTextColor: currentTheme === 'customImage' ? customImageTextColor : null,
+});
+
+const loadSettings = async () => {
+  if (!settingsFilePath) {
+    return;
+  }
+
+  try {
+    const raw = await fs.readFile(settingsFilePath, 'utf8');
+    const parsed = JSON.parse(raw);
+
+    if (typeof parsed.currentTheme === 'string' && THEMES[parsed.currentTheme]) {
+      currentTheme = parsed.currentTheme;
+    }
+
+    if (typeof parsed.customBackgroundImageBase64 === 'string') {
+      customBackgroundImageBase64 = parsed.customBackgroundImageBase64;
+    }
+
+    if (typeof parsed.customImageTextColor === 'string' && ['white', 'black'].includes(parsed.customImageTextColor)) {
+      customImageTextColor = parsed.customImageTextColor;
+    }
+  } catch (error) {
+    if (error.code !== 'ENOENT') {
+      console.error('Failed to load settings:', error);
+    }
+  }
+};
+
+const saveSettings = async () => {
+  if (!settingsFilePath) {
+    return;
+  }
+
+  const payload = {
+    currentTheme,
+    customBackgroundImageBase64,
+    customImageTextColor,
+  };
+
+  try {
+    await fs.mkdir(path.dirname(settingsFilePath), { recursive: true });
+    await fs.writeFile(settingsFilePath, JSON.stringify(payload, null, 2), 'utf8');
+  } catch (error) {
+    console.error('Failed to save settings:', error);
+  }
+};
+
+const sendThemeUpdate = () => {
+  if (!mainWindow || mainWindow.isDestroyed()) {
+    return;
+  }
+
+  mainWindow.webContents.send('theme-changed', getThemePayload());
+};
 
 // Helper: get the display that the window currently occupies
 const getDisplayForWindow = () => {
@@ -161,7 +227,7 @@ const createWindow = (options = {}) => {
   // Send initial play state to renderer
   mainWindow.webContents.on('did-finish-load', () => {
     mainWindow.webContents.send('play-state-changed', isPlaying);
-    mainWindow.webContents.send('theme-changed', currentTheme);
+    sendThemeUpdate();
     mainWindow.webContents.send('pin-state-changed', isPinned);
     const queueData = getCurrentQueue();
     if (queueData) {
@@ -206,38 +272,45 @@ const createWindow = (options = {}) => {
   });
 };
 
-const applyTheme = (themeKey) => {
+const applyTheme = async (themeKey, { force = false } = {}) => {
+  if (!THEMES[themeKey]) {
+    console.warn(`Unknown theme requested: ${themeKey}`);
+    return getThemePayload();
+  }
+
   isSwitchingTheme = true;
-  
+
   try {
-    if (themeKey === currentTheme) {
-      mainWindow.webContents.send('theme-changed', currentTheme);
-      return currentTheme;
-    }
-    
+    const previousTheme = currentTheme;
+    const shouldRecreateWindow = force || (mainWindow && themeKey !== previousTheme);
     const wasPinned = isPinned;
-    isPinned = wasPinned;
-    const bounds = mainWindow.getBounds();
-    
-    mainWindow.destroy();
+    const bounds = mainWindow?.getBounds();
+
     currentTheme = themeKey;
-    createWindow({
-      theme: themeKey,
-      bounds
-    });
 
-    // Restart mouse tracking to restore hide/show behaviour after recreating the window
-    startMouseTracking();
-    
-    // Explicitly restore pin state and mouse interaction
-    isPinned = wasPinned;
-    mainWindow.setIgnoreMouseEvents(false);
-    if (isPinned) {
-      isSidebarVisible = true;
+    if (shouldRecreateWindow && mainWindow) {
+      mainWindow.destroy();
+      createWindow({
+        theme: themeKey,
+        bounds,
+      });
+
+      // Restart mouse tracking to restore hide/show behaviour after recreating the window
+      startMouseTracking();
+
+      // Explicitly restore pin state and mouse interaction
+      isPinned = wasPinned;
+      mainWindow.setIgnoreMouseEvents(false);
+      if (isPinned) {
+        isSidebarVisible = true;
+      }
+      mainWindow.webContents.send('pin-state-changed', isPinned);
+    } else {
+      sendThemeUpdate();
     }
-    mainWindow.webContents.send('pin-state-changed', isPinned);
 
-    return currentTheme;
+    await saveSettings();
+    return getThemePayload();
   } finally {
     isSwitchingTheme = false;
   }
@@ -647,8 +720,11 @@ const initializeWindowSize = () => {
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
-app.whenReady().then(() => {
-  createWindow();
+app.whenReady().then(async () => {
+  settingsFilePath = path.join(app.getPath('userData'), 'settings.json');
+  await loadSettings();
+
+  createWindow({ theme: currentTheme });
 
   // Initialize window size and position after creation
   setTimeout(() => {
@@ -664,9 +740,44 @@ app.whenReady().then(() => {
     return isPinned;
   });
 
-  ipcMain.handle('apply-theme', (event, themeKey) => {
-    applyTheme(themeKey);
-    return currentTheme;
+  ipcMain.handle('apply-theme', async (event, themeKey) => {
+    const payload = await applyTheme(themeKey);
+    return payload;
+  });
+
+  ipcMain.handle('upload-custom-background', async () => {
+    const result = await dialog.showOpenDialog(mainWindow, {
+      title: 'Select background image',
+      properties: ['openFile'],
+      filters: [
+        { name: 'Images', extensions: ['png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp'] },
+      ],
+    });
+
+    if (result.canceled || !result.filePaths.length) {
+      return { canceled: true, ...getThemePayload() };
+    }
+
+    try {
+      const imagePath = result.filePaths[0];
+      const imageBuffer = await fs.readFile(imagePath);
+      customBackgroundImageBase64 = imageBuffer.toString('base64');
+      const payload = await applyTheme('customImage');
+      return { canceled: false, ...payload };
+    } catch (error) {
+      console.error('Failed to read image file:', error);
+      return { canceled: true, error: error.message, ...getThemePayload() };
+    }
+  });
+
+  ipcMain.handle('set-custom-image-text-color', async (event, color) => {
+    if (['white', 'black'].includes(color)) {
+      customImageTextColor = color;
+      await saveSettings();
+      sendThemeUpdate();
+      return { success: true, ...getThemePayload() };
+    }
+    return { success: false, error: 'Invalid color' };
   });
 
   ipcMain.on('toggle-play-pause', () => {
@@ -707,7 +818,7 @@ app.whenReady().then(() => {
   // dock icon is clicked and there are no other windows open.
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {
-      createWindow();
+      createWindow({ theme: currentTheme });
       setTimeout(() => {
         initializeWindowSize();
       }, 100);

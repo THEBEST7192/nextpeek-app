@@ -1,7 +1,7 @@
 import React, { useEffect, useCallback } from 'react';
 import closeIcon from '../assets/icons/close.svg';
 
-const SettingsModal = ({ isOpen, onClose, currentTheme, onThemeChange }) => {
+const SettingsModal = ({ isOpen, onClose, currentTheme, onThemeChange, onUploadImage, customImageTextColor, onCustomImageTextColorChange }) => {
   const handleClose = useCallback(() => {
     if (onClose) {
       onClose();
@@ -50,6 +50,7 @@ const SettingsModal = ({ isOpen, onClose, currentTheme, onThemeChange }) => {
     { key: 'bi', title: 'Purple and Blue (Bi)', description: 'Bisexual pride flag colors.' },
     { key: 'straight', title: 'Black and White (Straight)', description: 'Straight pride flag colors.' },
     { key: 'straightAlly', title: 'Straight Ally', description: 'Black and white with rainbow stripe, supports LGBT community.' },
+    { key: 'customImage', title: 'Upload image', description: 'Select a custom background image from your computer.', isUpload: true },
   ];
 
   if (!isOpen) {
@@ -84,21 +85,71 @@ const SettingsModal = ({ isOpen, onClose, currentTheme, onThemeChange }) => {
               <p>Choose how the window blends with your desktop.</p>
             </div>
             <div className="settings-theme-options" role="radiogroup" aria-label="Theme">
-              {themes.map((theme) => (
-                <button
-                  key={theme.key}
-                  type="button"
-                  role="radio"
-                  aria-checked={currentTheme === theme.key}
-                  className={`settings-theme-option${currentTheme === theme.key ? ' settings-theme-option--active' : ''}`}
-                  onClick={() => handleThemeSelect(theme.key)}
-                >
-                  <span className="settings-theme-option__title">{theme.title}</span>
-                  <span className="settings-theme-option__description">{theme.description}</span>
-                </button>
-              ))}
+              {themes.map((theme) => {
+                const isActive = currentTheme === theme.key;
+                const handleClick = () => {
+                  if (theme.isUpload) {
+                    if (onUploadImage) {
+                      onUploadImage();
+                    }
+                  } else {
+                    handleThemeSelect(theme.key);
+                  }
+                };
+
+                return (
+                  <button
+                    key={theme.key}
+                    type="button"
+                    role="radio"
+                    aria-checked={isActive}
+                    className={`settings-theme-option${isActive ? ' settings-theme-option--active' : ''}${theme.isUpload ? ' settings-theme-option--upload' : ''}`}
+                    onClick={handleClick}
+                  >
+                    <span className="settings-theme-option__title">{theme.title}</span>
+                    <span className="settings-theme-option__description">{theme.description}</span>
+                  </button>
+                );
+              })}
             </div>
           </section>
+
+          {currentTheme === 'customImage' && (
+            <section className="settings-section">
+              <div className="settings-section__header">
+                <h3>Text & Icon Color</h3>
+                <p>Choose text color that works with your background.</p>
+              </div>
+              <div className="settings-text-color-options" role="radiogroup" aria-label="Text Color">
+                <button
+                  type="button"
+                  role="radio"
+                  aria-checked={customImageTextColor === 'white'}
+                  className={`settings-text-color-option${customImageTextColor === 'white' ? ' settings-text-color-option--active' : ''}`}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onCustomImageTextColorChange?.('white');
+                  }}
+                >
+                  <span className="settings-text-color-option__preview" style={{ backgroundColor: '#ffffff', border: '1px solid #333' }}></span>
+                  <span className="settings-text-color-option__label">White</span>
+                </button>
+                <button
+                  type="button"
+                  role="radio"
+                  aria-checked={customImageTextColor === 'black'}
+                  className={`settings-text-color-option${customImageTextColor === 'black' ? ' settings-text-color-option--active' : ''}`}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onCustomImageTextColorChange?.('black');
+                  }}
+                >
+                  <span className="settings-text-color-option__preview" style={{ backgroundColor: '#000000' }}></span>
+                  <span className="settings-text-color-option__label">Black</span>
+                </button>
+              </div>
+            </section>
+          )}
         </div>
       </div>
     </div>

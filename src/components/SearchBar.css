@@ -126,17 +126,19 @@
 }
 
 .search-result-name {
-  color: #fff;
+  color: #ffffff;
   font-weight: 500;
   font-size: 13px;
   margin-bottom: 2px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  -webkit-text-fill-color: #ffffff;
 }
 
 .search-result-description {
-  color: #a7a7a7;
+  color: rgba(255, 255, 255, 0.7);
+  -webkit-text-fill-color: rgba(255, 255, 255, 0.7);
   font-size: 11px;
   white-space: nowrap;
   overflow: hidden;
@@ -146,35 +148,64 @@
 body[data-theme='trans'] .search-input,
 body[data-theme='gay'] .search-input,
 body[data-theme='lesbian'] .search-input,
-body[data-theme='asexual'] .search-input {
+body[data-theme='asexual'] .search-input,
+body[data-theme='aroace'] .search-input {
   background-color: rgba(0, 0, 0, 0.05);
   color: #000000;
+  -webkit-text-fill-color: #000000;
 }
 
 body[data-theme='trans'] .search-input::placeholder,
 body[data-theme='gay'] .search-input::placeholder,
 body[data-theme='lesbian'] .search-input::placeholder,
-body[data-theme='asexual'] .search-input::placeholder {
+body[data-theme='asexual'] .search-input::placeholder,
+body[data-theme='aroace'] .search-input::placeholder,
+body[data-theme='straightAlly'] .search-input::placeholder {
   color: rgba(0, 0, 0, 0.6);
 }
 
 body[data-theme='trans'] .search-settings-button img,
 body[data-theme='gay'] .search-settings-button img,
 body[data-theme='lesbian'] .search-settings-button img,
-body[data-theme='asexual'] .search-settings-button img {
+body[data-theme='asexual'] .search-settings-button img,
+body[data-theme='aroace'] .search-settings-button img {
   filter: invert(0%);
 }
 
-body[data-theme='trans'] .search-result-name,
-body[data-theme='gay'] .search-result-name,
-body[data-theme='lesbian'] .search-result-name,
-body[data-theme='asexual'] .search-result-name {
+body[data-theme='straightAlly'] .search-settings-button img {
+  filter: invert(100%);
+}
+
+/* Custom Image Theme - Black Text */
+body[data-theme='customImage'][data-custom-image-text-color='black'] .search-input {
+  background-color: rgba(0, 0, 0, 0.05);
   color: #000000;
 }
 
-body[data-theme='trans'] .search-result-description,
-body[data-theme='gay'] .search-result-description,
-body[data-theme='lesbian'] .search-result-description,
-body[data-theme='asexual'] .search-result-description {
+body[data-theme='customImage'][data-custom-image-text-color='black'] .search-input::placeholder {
   color: rgba(0, 0, 0, 0.6);
+}
+
+body[data-theme='customImage'][data-custom-image-text-color='black'] .search-settings-button img {
+  filter: invert(0%);
+}
+
+body[data-theme='customImage'][data-custom-image-text-color='black'] .search-result-name,
+body[data-theme='customImage'][data-custom-image-text-color='black'] .search-result-description {
+  -webkit-text-fill-color: inherit;
+}
+
+/* Custom Image Theme - White Text */
+body[data-theme='customImage'][data-custom-image-text-color='white'] .search-input {
+  background-color: rgba(255, 255, 255, 0.05);
+  color: #ffffff;
+}
+
+body[data-theme='customImage'][data-custom-image-text-color='white'] .search-input::placeholder {
+  color: rgba(255, 255, 255, 1);
+}
+
+body[data-theme='customImage'][data-custom-image-text-color='white'] .search-result-name,
+body[data-theme='customImage'][data-custom-image-text-color='white'] .search-result-description {
+  -webkit-text-fill-color: inherit;
 }

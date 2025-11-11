@@ -25,6 +25,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
     }
   },
   toggleTheme: (themeKey) => ipcRenderer.invoke('apply-theme', themeKey),
+  uploadCustomBackground: () => ipcRenderer.invoke('upload-custom-background'),
+  setCustomImageTextColor: (color) => ipcRenderer.invoke('set-custom-image-text-color', color),
   onThemeChange: (callback) => {
     ipcRenderer.on('theme-changed', callback);
     return () => ipcRenderer.removeListener('theme-changed', callback);

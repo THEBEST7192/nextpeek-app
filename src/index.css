@@ -23,6 +23,52 @@ body[data-theme='transparent'] {
   background-color: rgba(18, 18, 18, 0.7);
 }
 
+body[data-theme='customImage'] {
+  background: var(--custom-image-url, none);
+  background-attachment: fixed;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+body.has-custom-background {
+  background-color: #000000;
+}
+
+/* Custom Image Text Color Styles - White Text */
+body[data-theme='customImage'][data-custom-image-text-color='white'] #titlebar img {
+  filter: invert(100%);
+}
+
+body[data-theme='customImage'][data-custom-image-text-color='white'] .song-title,
+body[data-theme='customImage'][data-custom-image-text-color='white'] .song-artist {
+  color: rgba(255, 255, 255, 1);
+  -webkit-text-fill-color: rgba(255, 255, 255, 1);
+}
+
+body[data-theme='customImage'][data-custom-image-text-color='white'] .no-playing-message,
+body[data-theme='customImage'][data-custom-image-text-color='white'] .queue-empty-message {
+  color: rgba(255, 255, 255, 1);
+  -webkit-text-fill-color: rgba(255, 255, 255, 1);
+}
+
+/* Custom Image Text Color Styles - Black Text */
+body[data-theme='customImage'][data-custom-image-text-color='black'] #titlebar img {
+  filter: invert(0%);
+}
+
+body[data-theme='customImage'][data-custom-image-text-color='black'] .song-title,
+body[data-theme='customImage'][data-custom-image-text-color='black'] .song-artist {
+  color: rgba(0, 0, 0, 0.85);
+  -webkit-text-fill-color: rgba(0, 0, 0, 0.85);
+}
+
+body[data-theme='customImage'][data-custom-image-text-color='black'] .no-playing-message,
+body[data-theme='customImage'][data-custom-image-text-color='black'] .queue-empty-message {
+  color: rgba(0, 0, 0, 0.75);
+  -webkit-text-fill-color: rgba(0, 0, 0, 0.75);
+}
+
 /* Pride Theme Styles */
 body[data-theme='rainbow'] {
   background: linear-gradient(180deg, 
@@ -191,7 +237,6 @@ body[data-theme='straightAlly'] {
 
 /* Rainbow text for straight ally theme */
 body[data-theme='straightAlly'] #titlebar,
-body[data-theme='straightAlly'] #content,
 body[data-theme='straightAlly'] .section-title,
 body[data-theme='straightAlly'] .settings-modal__header h2,
 body[data-theme='straightAlly'] .settings-section__header h3,
@@ -200,9 +245,7 @@ body[data-theme='straightAlly'] h1,
 body[data-theme='straightAlly'] h2,
 body[data-theme='straightAlly'] h3,
 body[data-theme='straightAlly'] p,
-body[data-theme='straightAlly'] span,
-body[data-theme='straightAlly'] .song-title,
-body[data-theme='straightAlly'] .song-artist {
+body[data-theme='straightAlly'] span {
   background: linear-gradient(90deg, 
     #e40303 0%, 
     #ff8c00 16.67%, 
@@ -252,10 +295,6 @@ body[data-theme='lesbian'] .titlebar-button::after,
 body[data-theme='aroace'] .titlebar-button::after,
 body[data-theme='asexual'] .titlebar-button::after {
   background-color: rgba(0, 0, 0, 0.08);
-}
-
-body[data-theme='straight'] #close-button img {
-  filter: invert(0%);
 }
 
 body[data-theme='straight'] #close-button::after {
@@ -386,7 +425,7 @@ body[data-theme='aroace'] #login-screen h2,
 body[data-theme='lesbian'] #login-screen h2,
 body[data-theme='asexual'] #login-screen h2,
 body[data-theme='straightAlly'] #login-screen h2 {
-  color: #333333;
+  color: rgba(0, 0, 0, 0.72);
 }
 
 body[data-theme='trans'] #login-screen p,
@@ -414,40 +453,96 @@ body[data-theme='straight'] #login-settings-button img {
 body[data-theme='trans'] .section-title,
 body[data-theme='gay'] .section-title,
 body[data-theme='lesbian'] .section-title,
-body[data-theme='asexual'] .section-title {
+body[data-theme='asexual'] .section-title,
+body[data-theme='aroace'] .section-title {
   color: #000000;
+}
+
+/* Custom Image Theme - Black Text */
+body[data-theme='customImage'][data-custom-image-text-color='black'] #login-screen h1 {
+  color: #000000;
+}
+
+body[data-theme='customImage'][data-custom-image-text-color='black'] #login-screen h2 {
+  color: rgba(0, 0, 0, 0.72);
+}
+
+body[data-theme='customImage'][data-custom-image-text-color='black'] #login-screen p {
+  color: rgba(0, 0, 0, 0.72);
+}
+
+body[data-theme='customImage'][data-custom-image-text-color='black'] #login-settings-button img {
+  filter: invert(0%);
+}
+
+body[data-theme='customImage'][data-custom-image-text-color='black'] .section-title {
+  color: #000000;
+}
+
+/* Custom Image Theme - White Text */
+body[data-theme='customImage'][data-custom-image-text-color='white'] #login-screen h1 {
+  color: #ffffff;
+}
+
+body[data-theme='customImage'][data-custom-image-text-color='white'] #login-screen h2 {
+  color: rgba(255, 255, 255, 0.72);
+}
+
+body[data-theme='customImage'][data-custom-image-text-color='white'] #login-screen p {
+  color: rgba(255, 255, 255, 0.72);
+}
+
+body[data-theme='customImage'][data-custom-image-text-color='white'] #login-settings-button img {
+  filter: invert(100%);
+}
+
+body[data-theme='customImage'][data-custom-image-text-color='white'] .section-title {
+  color: #ffffff;
 }
 
 body[data-theme='trans'] .no-playing-message,
 body[data-theme='gay'] .no-playing-message,
 body[data-theme='lesbian'] .no-playing-message,
 body[data-theme='asexual'] .no-playing-message,
+body[data-theme='aroace'] .no-playing-message,
 body[data-theme='trans'] .queue-empty-message,
 body[data-theme='gay'] .queue-empty-message,
 body[data-theme='lesbian'] .queue-empty-message,
-body[data-theme='asexual'] .queue-empty-message {
+body[data-theme='asexual'] .queue-empty-message,
+body[data-theme='aroace'] .queue-empty-message {
   color: rgba(0, 0, 0, 0.72);
 }
 
 body[data-theme='trans'] .song-art-placeholder,
 body[data-theme='gay'] .song-art-placeholder,
 body[data-theme='lesbian'] .song-art-placeholder,
-body[data-theme='asexual'] .song-art-placeholder {
+body[data-theme='asexual'] .song-art-placeholder,
+body[data-theme='aroace'] .song-art-placeholder,
+body[data-theme='straightAlly'] .song-art-placeholder {
   color: rgba(0, 0, 0, 0.72);
   background: rgba(0, 0, 0, 0.08);
+}
+
+body[data-theme='straightAlly'] .song-art-placeholder {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.08);
 }
 
 body[data-theme='trans'] .song-title,
 body[data-theme='gay'] .song-title,
 body[data-theme='lesbian'] .song-title,
-body[data-theme='asexual'] .song-title {
+body[data-theme='asexual'] .song-title,
+body[data-theme='aroace'] .song-title,
+body[data-theme='straightAlly'] .song-title {
   color: #000000;
 }
 
 body[data-theme='trans'] .song-artist,
 body[data-theme='gay'] .song-artist,
 body[data-theme='lesbian'] .song-artist,
-body[data-theme='asexual'] .song-artist {
+body[data-theme='asexual'] .song-artist,
+body[data-theme='aroace'] .song-artist,
+body[data-theme='straightAlly'] .song-artist {
   color: rgba(0, 0, 0, 0.6);
 }
 
@@ -798,7 +893,7 @@ body[data-theme='straightAlly'] .settings-theme-option__description {
   font-size: 1.5rem;
   font-weight: 600;
   margin: 0 0 1.5rem 0;
-  color: #b3b3b3;
+  color: rgba(255, 255, 255, 0.72);
 }
 
 #login-screen p {
@@ -884,6 +979,10 @@ body[data-theme='straightAlly'] .settings-theme-option__description {
   padding: 71px 10px 10px;
 }
 
+body[data-theme='straightAlly'] #content {
+  padding: 10px 10px 10px;
+}
+
 #settings-bar {
   display: flex;
   justify-content: flex-end;
@@ -908,7 +1007,7 @@ body[data-theme='straightAlly'] .settings-theme-option__description {
   font-size: 1.2rem;
   font-weight: 600;
   margin-bottom: 10px;
-  color: #fff; 
+  color: #fff;
 }
 
 .now-playing-section,
@@ -923,14 +1022,10 @@ body[data-theme='straightAlly'] .settings-theme-option__description {
   margin-bottom: 10px;
 }
 
-.no-playing-message {
-  color: #fff;
-  margin: 6px 0 12px;
-}
-
+.no-playing-message,
 .queue-empty-message {
   color: #fff;
-  margin: 6px 0 0;
+  margin: 6px 0 12px;
 }
 
 .now-playing-container {
@@ -1152,6 +1247,57 @@ body[data-theme='straightAlly'] .settings-theme-option__description {
   font-size: 0.78rem;
   margin-top: 4px;
   line-height: 1.4;
+}
+
+.settings-text-color-options {
+  display: flex;
+  gap: 12px;
+  flex-direction: row;
+}
+
+.settings-text-color-option {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: border-color 0.2s ease, background-color 0.2s ease;
+  flex: 1;
+  pointer-events: auto;
+  z-index: 10;
+}
+
+.settings-text-color-option:hover,
+.settings-text-color-option:focus-visible {
+  border-color: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.08);
+  outline: none;
+}
+
+.settings-text-color-option:active {
+  transform: scale(0.98);
+}
+
+.settings-text-color-option--active {
+  border-color: rgba(255, 255, 255, 0.36);
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.settings-text-color-option__preview {
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  display: block;
+}
+
+.settings-text-color-option__label {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.8);
 }
 
 .song-art-hover img {
