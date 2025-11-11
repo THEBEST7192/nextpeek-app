@@ -438,15 +438,22 @@ body[data-theme='straightAlly'] #login-screen p {
 }
 
 body[data-theme='trans'] #login-settings-button img,
+body[data-theme='trans'] #login-casino-button img,
 body[data-theme='gay'] #login-settings-button img,
+body[data-theme='gay'] #login-casino-button img,
 body[data-theme='aroace'] #login-settings-button img,
+body[data-theme='aroace'] #login-casino-button img,
 body[data-theme='lesbian'] #login-settings-button img,
+body[data-theme='lesbian'] #login-casino-button img,
 body[data-theme='asexual'] #login-settings-button img,
-body[data-theme='straightAlly'] #login-settings-button img {
+body[data-theme='asexual'] #login-casino-button img,
+body[data-theme='straightAlly'] #login-settings-button img,
+body[data-theme='straightAlly'] #login-casino-button img {
   filter: invert(0%);
 }
 
-body[data-theme='straight'] #login-settings-button img {
+body[data-theme='straight'] #login-settings-button img,
+body[data-theme='straight'] #login-casino-button img {
   filter: invert(0%);
 }
 
@@ -471,7 +478,8 @@ body[data-theme='customImage'][data-custom-image-text-color='black'] #login-scre
   color: rgba(0, 0, 0, 0.72);
 }
 
-body[data-theme='customImage'][data-custom-image-text-color='black'] #login-settings-button img {
+body[data-theme='customImage'][data-custom-image-text-color='black'] #login-settings-button img,
+body[data-theme='customImage'][data-custom-image-text-color='black'] #login-casino-button img {
   filter: invert(0%);
 }
 
@@ -492,7 +500,8 @@ body[data-theme='customImage'][data-custom-image-text-color='white'] #login-scre
   color: rgba(255, 255, 255, 0.72);
 }
 
-body[data-theme='customImage'][data-custom-image-text-color='white'] #login-settings-button img {
+body[data-theme='customImage'][data-custom-image-text-color='white'] #login-settings-button img,
+body[data-theme='customImage'][data-custom-image-text-color='white'] #login-casino-button img {
   filter: invert(100%);
 }
 
@@ -933,10 +942,16 @@ body[data-theme='straightAlly'] .settings-theme-option__description {
   filter: invert(1); /* Make the play icon white */
 }
 
-#login-settings-button {
+#login-action-buttons {
   position: fixed;
   bottom: 20px;
   right: 20px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+#login-action-buttons button {
   background: transparent;
   border: none;
   width: 40px;
@@ -949,19 +964,19 @@ body[data-theme='straightAlly'] .settings-theme-option__description {
   transition: background-color 0.2s ease, transform 0.2s ease;
 }
 
-#login-settings-button:hover,
-#login-settings-button:focus-visible {
+#login-action-buttons button:hover,
+#login-action-buttons button:focus-visible {
   background: rgba(255, 255, 255, 0.08);
   transform: scale(1.05);
   outline: none;
 }
 
-#login-settings-button:active {
+#login-action-buttons button:active {
   background: rgba(255, 255, 255, 0.14);
   transform: scale(0.98);
 }
 
-#login-settings-button img {
+#login-action-buttons img {
   width: 22px;
   height: 22px;
   filter: invert(1);
