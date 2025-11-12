@@ -2,6 +2,7 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import NowPlaying from './components/NowPlaying.jsx';
 import SettingsModal from './components/SettingsModal.jsx';
+import { runSlotsGame, initializeSlotsGame } from './games/games.jsx';
 import playIcon from './assets/icons/play.svg';
 import pauseIcon from './assets/icons/pause.svg';
 import pinIcon from './assets/icons/pin.svg';
@@ -152,6 +153,121 @@ document.addEventListener('DOMContentLoaded', () => {
     loginSettingsBtn.addEventListener('click', () => {
       isLoginSettingsOpen = true;
       renderLoginSettingsModal();
+    });
+  }
+
+  // Casino button
+  const loginCasinoBtn = document.getElementById('login-casino-button');
+  const gameModal = document.getElementById('game-modal');
+  const gameCloseBtn = document.getElementById('game-close-btn');
+  const gameOutput = document.getElementById('stdout/stderr');
+  const spinButton = document.getElementById('spin-button');
+  const moneyDisplay = document.getElementById('money-display');
+  const betInput = document.getElementById('bet-input');
+
+  // Persisted money across spins (and sessions)
+  let money = Number(localStorage.getItem('casino_money')) || 120;
+  const setMoney = (value) => {
+    money = Number(value) || 0;
+    localStorage.setItem('casino_money', String(money));
+    if (moneyDisplay) moneyDisplay.textContent = String(money);
+  };
+  // Initialize money display on load
+  setMoney(money);
+
+  let injectedStyles = null;
+
+  if (loginCasinoBtn) {
+    loginCasinoBtn.addEventListener('click', async () => {
+      if (gameModal && gameOutput) {
+        gameModal.style.display = 'flex';
+        if (!injectedStyles) { // Only initialize if styles haven't been injected yet
+          try {
+            const { money: initialMoney, style } = initializeSlotsGame();
+            let currentMoney = initialMoney;
+            gameOutput.value = `Welcome to the Casino!\nYou have ${currentMoney} credits.`;
+            setMoney(initialMoney);
+            injectedStyles = { style };
+          } catch (error) {
+            gameOutput.value = `Error initializing game: ${error.message}\n`;
+            console.error('Game initialization error:', error);
+          }
+        }
+      }
+    });
+  }
+
+  if (spinButton) {
+    let isSpinning = false;
+    let isAwaitingSoulSellDecision = false;
+    let pendingBet = 0; // To store the bet that caused the soul-sell prompt
+
+    spinButton.addEventListener('click', async () => {
+      if (isSpinning) {
+        return;
+      }
+      isSpinning = true;
+      spinButton.disabled = true; // Disable button during cooldown
+
+      const currentInput = betInput ? betInput.value : '';
+
+      if (gameOutput) {
+        gameOutput.value = 'Processing...\n';
+
+        try {
+          let result;
+          if (isAwaitingSoulSellDecision) {
+            const sellSoulDecision = currentInput;
+            result = await runSlotsGame(money, pendingBet, sellSoulDecision); // Pass pendingBet
+            isAwaitingSoulSellDecision = false; // Reset state
+            pendingBet = 0; // Clear pending bet
+          } else {
+            const betValue = Number(currentInput) || 1;
+            result = await runSlotsGame(money, betValue);
+            if (result.requiresSoulSellDecision) {
+              pendingBet = betValue; // Store the bet that caused the prompt
+            }
+          }
+
+          if (result.requiresSoulSellDecision) {
+            gameOutput.value = result.output;
+            isAwaitingSoulSellDecision = true;
+            betInput.value = ''; // Clear input for next decision
+          } else {
+            gameOutput.value = result.output;
+            setMoney(result.money);
+            betInput.value = ''; // Clear input after game
+          }
+        } catch (error) {
+          gameOutput.value = `Error running game: ${error.message}\n`;
+          console.error('Game error:', error);
+        } finally {
+          setTimeout(() => {
+            isSpinning = false;
+            spinButton.disabled = false; // Re-enable button after cooldown
+          }, 2000);
+        }
+      }
+    });
+    betInput.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter') spinButton.click();
+    });
+  }
+
+  if (gameCloseBtn) {
+    gameCloseBtn.addEventListener('click', () => {
+      if (gameModal) {
+        gameModal.style.display = 'none';
+      }
+    });
+  }
+
+  // Close game modal when clicking outside
+  if (gameModal) {
+    gameModal.addEventListener('click', (e) => {
+      if (e.target === gameModal) {
+        gameModal.style.display = 'none';
+      }
     });
   }
 

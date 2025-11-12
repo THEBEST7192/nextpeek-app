@@ -3,7 +3,13 @@
   <head>
     <meta charset="UTF-8" />
     <title>NextPeek - Spotify Queue Manager</title>
+    
+        
     <link rel="stylesheet" href="./src/index.css">
+    <script defer type="module">
+      import { holyc_web_run } from "./src/games/holyc/holy.js";
+      window.holyc_web_run = holyc_web_run;
+    </script>
   </head>
   <body data-theme="solid">
     <div id="titlebar">
@@ -55,6 +61,27 @@
         </div>
       </div>
       <div id="root"></div>
+      <div id="game-modal" class="game-modal" style="display: none;">
+        <div class="game-modal-content">
+          <div class="game-modal-header">
+            <h2>Temple Slots</h2>
+            <button id="game-close-btn" class="game-close-btn" aria-label="Close game">×</button>
+          </div>
+          <textarea id="stdin" style="display: none;"></textarea>
+          <textarea id="stdout/stderr" class="game-output" readonly></textarea>
+          <div class="game-controls" style="display:flex;gap:8px;align-items:center;margin-top:8px;">
+            <div>
+              <label for="money-display">Money:</label>
+              <span id="money-display">120</span>
+            </div>
+            <div>
+              <label for="bet-input">Bet:</label>
+              <input id="bet-input" type="number" min="1" value="6" style="width:64px;" />
+            </div>
+          </div>
+                    <button id="spin-button" type="button" class="nes-btn is-success">Spin</button>
+        </div>
+      </div>
     </div>
     <script type="module" src="/src/renderer.jsx"></script>
   </body>
