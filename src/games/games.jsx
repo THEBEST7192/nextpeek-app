@@ -1,4 +1,5 @@
-import slotsGameCode from './slots.hc?raw'
+import slotsGameCode from './slots.hc?raw';
+import templeosFont from './holyc/templeos_font.ttf';
 
 const injectStyles = () => {
   const gameModal = document.getElementById('game-modal');
@@ -11,7 +12,7 @@ const injectStyles = () => {
   style.textContent = `
     @font-face {
       font-family: 'TempleOS';
-      src: url('./src/games/holyc/templeos_font.ttf') format('truetype');
+            src: url(${templeosFont}) format('truetype');
       font-weight: normal;
       font-style: normal;
     }
