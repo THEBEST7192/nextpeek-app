@@ -3,6 +3,8 @@ import SearchBar from './SearchBar';
 import playIcon from '../assets/icons/play.svg';
 import pauseIcon from '../assets/icons/pause.svg';
 import SettingsModal from './SettingsModal.jsx';
+import repeatIcon from '../assets/icons/controls/repeat.png';
+import shuffleIcon from '../assets/icons/controls/shuffle.png';
 
 const failedAlbumCoverUrls = new Set();
 
@@ -29,6 +31,8 @@ const NowPlaying = () => {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [currentTheme, setCurrentTheme] = useState(() => document.body.dataset.theme || 'solid');
   const [customImageTextColor, setCustomImageTextColor] = useState(() => document.body.dataset.customImageTextColor || 'white');
+  const [isShuffleOn, setIsShuffleOn] = useState(false);
+  const [isRepeatOn, setIsRepeatOn] = useState(false);
   const manualChangeTimeout = useRef(null);
   const lastSpotifyState = useRef(null);
 
@@ -282,7 +286,25 @@ const NowPlaying = () => {
         onPlaylistSelect={handlePlaylistSelect}
         onSettingsClick={() => setIsSettingsOpen(true)}
       />
-      <h2 className="section-title">Now Playing</h2>
+      <div className="section-header">
+        <h2 className="section-title">Now Playing</h2>
+        <div className="playback-controls">
+          <button 
+            className={`control-button ${isShuffleOn ? 'active' : ''}`}
+            onClick={() => setIsShuffleOn(!isShuffleOn)}
+            aria-label={isShuffleOn ? 'Disable shuffle' : 'Enable shuffle'}
+          >
+            <img src={shuffleIcon} alt="" />
+          </button>
+          <button 
+            className={`control-button ${isRepeatOn ? 'active' : ''}`}
+            onClick={() => setIsRepeatOn(!isRepeatOn)}
+            aria-label={isRepeatOn ? 'Disable repeat' : 'Enable repeat'}
+          >
+            <img src={repeatIcon} alt="" />
+          </button>
+        </div>
+      </div>
       <div className="now-playing-section">
         {currentlyPlaying && currentlyPlaying.title ? (
           <div className="queue-item" onClick={handleTogglePlayPause}>
