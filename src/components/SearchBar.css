@@ -155,15 +155,6 @@ body[data-theme='aroace'] .search-input {
   -webkit-text-fill-color: #000000;
 }
 
-body[data-theme='trans'] .search-input::placeholder,
-body[data-theme='gay'] .search-input::placeholder,
-body[data-theme='lesbian'] .search-input::placeholder,
-body[data-theme='asexual'] .search-input::placeholder,
-body[data-theme='aroace'] .search-input::placeholder,
-body[data-theme='straightAlly'] .search-input::placeholder {
-  color: rgba(0, 0, 0, 0.6);
-}
-
 body[data-theme='trans'] .search-settings-button img,
 body[data-theme='gay'] .search-settings-button img,
 body[data-theme='lesbian'] .search-settings-button img,
@@ -176,14 +167,162 @@ body[data-theme='straightAlly'] .search-settings-button img {
   filter: invert(100%);
 }
 
+/* Base styles for all themes */
+.search-input {
+  color: #000;
+  background: transparent;
+  -webkit-text-fill-color: #000;
+  caret-color: #000;
+}
+
+.search-input::placeholder {
+  color: rgba(0, 0, 0, 0.72);
+  -webkit-text-fill-color: rgba(0, 0, 0, 0.72);
+  background: transparent;
+}
+
+.search-result-name,
+.search-result-description {
+  color: #fff;
+  -webkit-text-fill-color: #fff;
+}
+
+/* White text in transparent, solid, rainbow, straight, and bi themes */
+body[data-theme='transparent'] .search-input,
+body[data-theme='solid'] .search-input,
+body[data-theme='rainbow'] .search-input,
+body[data-theme='straight'] .search-input,
+body[data-theme='bi'] .search-input {
+  color: #fff !important;
+  -webkit-text-fill-color: #fff !important;
+  caret-color: #fff;
+}
+
+body[data-theme='transparent'] .search-input::placeholder,
+body[data-theme='solid'] .search-input::placeholder,
+body[data-theme='rainbow'] .search-input::placeholder,
+body[data-theme='straight'] .search-input::placeholder,
+body[data-theme='bi'] .search-input::placeholder {
+  color: rgba(255, 255, 255, 0.7) !important;
+  -webkit-text-fill-color: rgba(255, 255, 255, 0.7) !important;
+}
+
+body[data-theme='transparent'] .search-result-name,
+body[data-theme='transparent'] .search-result-description,
+body[data-theme='solid'] .search-result-name,
+body[data-theme='solid'] .search-result-description,
+body[data-theme='straight'] .search-result-name,
+body[data-theme='straight'] .search-result-description,
+body[data-theme='bi'] .search-result-name,
+body[data-theme='bi'] .search-result-description {
+  color: #fff !important;
+  -webkit-text-fill-color: #fff !important;
+}
+
+/* For trans, lesbian, asexual, gay, and aroace: black text in bar, white text in results */
+body[data-theme='trans'] .search-input,
+body[data-theme='lesbian'] .search-input,
+body[data-theme='asexual'] .search-input,
+body[data-theme='gay'] .search-input,
+body[data-theme='aroace'] .search-input {
+  color: #000000 !important;
+  -webkit-text-fill-color: #000000 !important;
+  caret-color: #000000;
+}
+
+body[data-theme='trans'] .search-input::placeholder,
+body[data-theme='lesbian'] .search-input::placeholder,
+body[data-theme='asexual'] .search-input::placeholder,
+body[data-theme='gay'] .search-input::placeholder,
+body[data-theme='aroace'] .search-input::placeholder {
+  color: rgba(0, 0, 0, 0.72) !important;
+  -webkit-text-fill-color: rgba(0, 0, 0, 0.72) !important;
+}
+
+body[data-theme='trans'] .search-result-name,
+body[data-theme='trans'] .search-result-description,
+body[data-theme='lesbian'] .search-result-name,
+body[data-theme='lesbian'] .search-result-description,
+body[data-theme='asexual'] .search-result-name,
+body[data-theme='asexual'] .search-result-description,
+body[data-theme='gay'] .search-result-name,
+body[data-theme='gay'] .search-result-description,
+body[data-theme='aroace'] .search-result-name,
+body[data-theme='aroace'] .search-result-description {
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+}
+
+/* Rainbow text only for straightAlly theme */
+body[data-theme='straightAlly'] .search-container .search-input {
+  color: #fff;
+  caret-color: #fff;
+  background: linear-gradient(90deg, 
+    #e40303 0%, 
+    #ff8c00 16.67%, 
+    #ffed00 33.33%, 
+    #008026 50%, 
+    #24408e 66.67%, 
+    #732982 100%) !important;
+  -webkit-background-clip: text !important;
+  background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  background-size: 100% auto !important;
+}
+
+body[data-theme='straightAlly'] .search-container .search-input::placeholder {
+  opacity: 0.8 !important;
+  color: rgba(255, 255, 255, 0.7) !important;
+  -webkit-text-fill-color: rgba(255, 255, 255, 0.7) !important;
+  background: linear-gradient(90deg, 
+    rgba(228, 3, 3, 0.7) 0%, 
+    rgba(255, 140, 0, 0.7) 16.67%, 
+    rgba(255, 237, 0, 0.7) 33.33%, 
+    rgba(0, 128, 38, 0.7) 50%, 
+    rgba(36, 64, 142, 0.7) 66.67%, 
+    rgba(115, 41, 130, 0.7) 100%) !important;
+  -webkit-background-clip: text !important;
+  background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+}
+
+body[data-theme='straightAlly'] .search-container .search-result-name,
+body[data-theme='straightAlly'] .search-container .search-result-description,
+body[data-theme='straightAlly'] .search-container .search-no-results .search-result-name,
+body[data-theme='straightAlly'] .search-container .search-no-results .search-result-description {
+  background: linear-gradient(90deg, 
+    #e40303 0%, 
+    #ff8c00 16.67%, 
+    #ffed00 33.33%, 
+    #008026 50%, 
+    #24408e 66.67%, 
+    #732982 100%) !important;
+  -webkit-background-clip: text !important;
+  background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  color: transparent !important;
+  background-size: 100% auto !important;
+  display: block !important;
+}
+
+/* Make text selection visible */
+body[data-theme='straightAlly'] .search-input::selection {
+  background: rgba(30, 215, 96, 0.3);
+  color: #fff;
+  -webkit-text-fill-color: #fff;
+}
+
 /* Custom Image Theme - Black Text */
 body[data-theme='customImage'][data-custom-image-text-color='black'] .search-input {
   background-color: rgba(0, 0, 0, 0.05);
-  color: #000000;
+  color: #000000 !important;
+  -webkit-text-fill-color: #000000 !important;
+  caret-color: #000000;
 }
 
 body[data-theme='customImage'][data-custom-image-text-color='black'] .search-input::placeholder {
-  color: rgba(0, 0, 0, 0.6);
+  color: rgba(0, 0, 0, 0.72) !important;
+  -webkit-text-fill-color: rgba(0, 0, 0, 0.72) !important;
 }
 
 body[data-theme='customImage'][data-custom-image-text-color='black'] .search-settings-button img {
@@ -192,17 +331,21 @@ body[data-theme='customImage'][data-custom-image-text-color='black'] .search-set
 
 body[data-theme='customImage'][data-custom-image-text-color='black'] .search-result-name,
 body[data-theme='customImage'][data-custom-image-text-color='black'] .search-result-description {
-  -webkit-text-fill-color: inherit;
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
 }
 
 /* Custom Image Theme - White Text */
 body[data-theme='customImage'][data-custom-image-text-color='white'] .search-input {
   background-color: rgba(255, 255, 255, 0.05);
-  color: #ffffff;
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+  caret-color: #ffffff;
 }
 
 body[data-theme='customImage'][data-custom-image-text-color='white'] .search-input::placeholder {
-  color: rgba(255, 255, 255, 1);
+  color: rgba(255, 255, 255, 0.7) !important;
+  -webkit-text-fill-color: rgba(255, 255, 255, 0.7) !important;
 }
 
 body[data-theme='customImage'][data-custom-image-text-color='white'] .search-result-name,
