@@ -321,7 +321,7 @@ const NowPlaying = () => {
             </div>
           </div>
         ) : (
-          <p className="no-playing-message">Nothing is currently playing.</p>
+          <p className="no-playing-message">Nothing is currently playing</p>
         )}
       </div>
 

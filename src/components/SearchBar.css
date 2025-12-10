@@ -2,7 +2,6 @@
 .search-container {
   position: relative;
   z-index: 9;
-  padding-bottom: 5px;
 }
 
 .search-input-wrapper {

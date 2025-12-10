@@ -65,11 +65,23 @@ body[data-theme='customImage'][data-custom-image-text-color='black'] .song-artis
 
 body[data-theme='customImage'][data-custom-image-text-color='black'] .no-playing-message,
 body[data-theme='customImage'][data-custom-image-text-color='black'] .queue-empty-message {
+  color: rgba(0, 0, 0, 0.85);
+  -webkit-text-fill-color: rgba(0, 0, 0, 0.85);
+}
+
+
+
+body[data-theme='customImage'][data-custom-image-text-color='black'] .no-playing-message,
+body[data-theme='customImage'][data-custom-image-text-color='black'] .queue-empty-message {
   color: rgba(0, 0, 0, 0.75);
   -webkit-text-fill-color: rgba(0, 0, 0, 0.75);
 }
 
 /* Pride Theme Styles */
+.control-button.active {
+  filter: invert(48%) sepia(99%) saturate(436%) hue-rotate(96deg) brightness(93%) contrast(88%);
+}
+
 body[data-theme='rainbow'] {
   background: linear-gradient(180deg, 
     #e40303 0%, 
@@ -988,7 +1000,6 @@ body[data-theme='straightAlly'] #content {
   justify-content: flex-end;
   align-items: center;
   gap: 10px;
-  margin-bottom: 10px;
 }
 
 .now-playing {
@@ -1002,11 +1013,13 @@ body[data-theme='straightAlly'] #content {
   flex-direction: column;; 
 }
 
+/* Section Headers (Space between Searchbar and Queue) */
 .section-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 10px;
+  margin-top: 8px;
+  margin-bottom: 8px;
 }
 
 .section-title {
@@ -1034,26 +1047,29 @@ body[data-theme='straightAlly'] #content {
   width: 36px;
   height: 36px;
   opacity: 0.8;
+  position: relative;
 }
 
-.control-button:hover {
-  background-color: rgba(255, 255, 255, 0.1);
+.control-button::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border-radius: 50%;
+  background: rgba(30, 215, 96, 0.25);
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.control-button:hover::before {
   opacity: 1;
-  transform: scale(1.05);
 }
 
-.control-button:active {
-  transform: scale(0.95);
-  opacity: 0.9;
-}
-
-.control-button.active {
-  background-color: rgba(30, 215, 96, 0.1);
+.control-button.active::before {
   opacity: 1;
-}
-
-.control-button.active:hover {
-  background-color: rgba(30, 215, 96, 0.2);
+  background: rgba(30, 215, 96, 0.4);
 }
 
 .control-button img {
@@ -1062,15 +1078,95 @@ body[data-theme='straightAlly'] #content {
   filter: invert(1);
   opacity: 0.9;
   transition: all 0.2s ease;
+  position: relative;
+  z-index: 1;
 }
 
-.control-button:hover img {
+/* Light themes - black icons */
+body[data-theme='trans'] .control-button img,
+body[data-theme='gay'] .control-button img,
+body[data-theme='lesbian'] .control-button img,
+body[data-theme='asexual'] .control-button img,
+body[data-theme='aroace'] .control-button img {
+  filter: invert(0%);
+}
+
+
+/* Dark themes - white icons */
+body[data-theme='transparent'] .control-button img,
+body[data-theme='solid'] .control-button img,
+body[data-theme='rainbow'] .control-button img,
+body[data-theme='straight'] .control-button img,
+body[data-theme='bi'] .control-button img,
+body[data-theme='straightAlly'] .control-button img {
+  filter: invert(1);
+}
+
+
+/* Custom image theme */
+body[data-theme='customImage'][data-custom-image-text-color='white'] .control-button img {
+  filter: invert(1);
+}
+
+body[data-theme='customImage'][data-custom-image-text-color='black'] .control-button img {
+  filter: invert(0%);
+}
+
+/* Active state for all themes */
+.control-button.active {
   opacity: 1;
+  transition: all 0.2s ease;
+}
+
+.control-button.active::before {
+  opacity: 1;
+  background: rgba(30, 215, 96, 0.2);
+  transition: all 0.2s ease;
+}
+
+body[data-theme='gay'] .control-button:hover {
+  background-color: rgba(14, 71, 14, 0.25);
+}
+
+body[data-theme='gay'] .control-button.active {
+  background-color: rgba(14, 71, 14, 0.35);
 }
 
 .control-button.active img {
-  filter: invert(1) sepia(1) saturate(5) hue-rotate(80deg);
   opacity: 1;
+  filter: invert(48%) sepia(99%) saturate(436%) hue-rotate(96deg) brightness(93%) contrast(88%);
+}
+body[data-theme='gay'] .control-button.active img,
+body[data-theme='bi'] .control-button.active img {
+  /* previous: filter: brightness(0) saturate(100%) invert(10%) sepia(100%) saturate(5773%) hue-rotate(98deg) brightness(103%) contrast(103%); */
+  filter: invert(48%) sepia(99%) saturate(436%) hue-rotate(96deg) brightness(125%) contrast(105%);
+}
+
+body[data-theme='gay'] .control-button.active,
+body[data-theme='bi'] .control-button.active {
+  filter: none;
+}
+
+.control-button.active:hover {
+  transform: scale(1.03);
+}
+
+.control-button.active:hover::before {
+  background: rgba(30, 215, 96, 0.25);
+}
+
+.control-button.active:hover img {
+  opacity: 0.95;
+}
+
+/* Hover effect */
+.control-button:hover {
+  transform: scale(1.05);
+  opacity: 1;
+}
+
+.control-button:active {
+  transform: scale(0.95);
 }
 
 .now-playing-section,
@@ -1078,17 +1174,29 @@ body[data-theme='straightAlly'] #content {
   gap: 10px;
   display: flex;
   flex-direction: column;
-  width: 100%; 
+  width: 100%;
 }
 
 .now-playing-section {
+  margin-bottom: 15px;
+}
+
+.queue-section {
+  margin-top: 10px;
   margin-bottom: 10px;
 }
 
 .no-playing-message,
 .queue-empty-message {
+  margin: 0px;
+  padding: 12px 14px;
   color: #fff;
-  margin: 6px 0 12px;
+  background-color: rgba(255, 255, 255, 0.05);
+  border-radius: 10px;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  text-align: center;
+  line-height: 1.4;
 }
 
 .now-playing-container {
