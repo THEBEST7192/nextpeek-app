@@ -1147,6 +1147,46 @@ body[data-theme='bi'] .control-button.active {
   filter: none;
 }
 
+.control-button.active.repeat-one {
+  filter: none;
+}
+
+.control-button.active.repeat-one img,
+body[data-theme='customImage'] .control-button.active.repeat-one img {
+  filter: invert(48%) sepia(99%) saturate(436%) hue-rotate(96deg) brightness(93%) contrast(88%) invert(48%) sepia(99%) saturate(436%) hue-rotate(96deg) brightness(93%) contrast(88%);
+}
+
+.control-button.repeat-one::after {
+  content: "1";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 14px;
+  color: white;
+  font-weight: 600;
+  z-index: 2;
+}
+
+/* Themes with dark text for the '1' */
+body[data-theme='trans'] .control-button.repeat-one::after,
+body[data-theme='gay'] .control-button.repeat-one::after,
+body[data-theme='lesbian'] .control-button.repeat-one::after,
+body[data-theme='aroace'] .control-button.repeat-one::after,
+body[data-theme='asexual'] .control-button.repeat-one::after {
+  color: black;
+}
+
+/* Custom image theme - black text */
+body[data-theme='customImage'][data-custom-image-text-color='black'] .control-button.repeat-one::after {
+  color: black;
+}
+
+/* Custom image theme - white text */
+body[data-theme='customImage'][data-custom-image-text-color='white'] .control-button.repeat-one::after {
+  color: white;
+}
+
 .control-button.active:hover {
   transform: scale(1.03);
 }

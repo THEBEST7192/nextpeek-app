@@ -1,7 +1,7 @@
 ## Acknowledgements
 
 This project is made possible thanks to the contributions of the open-source community. I would like to acknowledge the following projects:
-
+- [Spicetify](https://github.com/spicetify/spicetify-cli) - For providing a cli tool to extend Spotify's functionality and the Spicetify [Discord server](https://discord.gg/spicetify) for support.
 - [NES.css](https://github.com/nostalgic-css/NES.css) ([MIT License](https://github.com/nostalgic-css/NES.css/blob/develop/LICENSE)) - For providing a retro 8-bit aesthetic to the casino user interface.
 - [TempleOS Font](https://github.com/rendello/templeos_font) - For preserving the iconic font of TempleOS, originally created by Terry A. Davis.
 - [HolyC JS Interpreter](https://github.com/leozamboni/HolyC-interpreter) ([MIT License](https://github.com/leozamboni/HolyC-interpreter/blob/master/LICENSE)) - For enabling the use of HolyC in javascript.
