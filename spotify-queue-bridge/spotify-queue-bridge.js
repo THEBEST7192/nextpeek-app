@@ -28,12 +28,23 @@
 
       updateKnownContext(currentContextUri);
 
+      const repeatModeRaw = typeof Spicetify.Player.getRepeat === 'function'
+        ? Spicetify.Player.getRepeat()
+        : 0;
+      const repeatMode = Number.isFinite(repeatModeRaw) ? repeatModeRaw : Number(repeatModeRaw) || 0;
+      const shuffleStateRaw = typeof Spicetify.Player.getShuffle === 'function'
+        ? Spicetify.Player.getShuffle()
+        : false;
+      const shuffleState = Boolean(shuffleStateRaw);
+
       const nowPlaying = current
         ? {
             title: current.title,
             artist: current.artist_name,
             album_cover: current.image_url,
             isPlaying: Spicetify.Player.isPlaying(),
+            repeatMode,
+            shuffle: shuffleState,
           }
         : {};
 
@@ -52,7 +63,12 @@
       await fetch("http://localhost:7192/api/updateQueue", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ nowPlaying, queue: q }),
+        body: JSON.stringify({
+          nowPlaying,
+          queue: q,
+          repeatMode,
+          shuffle: shuffleState,
+        }),
       });
     } catch (err) {
       console.error("QueueBridge update failed:", err);
@@ -113,6 +129,18 @@
             } catch (err) {
               console.error("Failed to play playlist:", err);
             }
+          }
+          break;
+        case "setShuffle":
+          if (data && typeof data.state === "boolean" && typeof Spicetify.Player.setShuffle === "function") {
+            await Spicetify.Player.setShuffle(data.state);
+            await updateBackend();
+          }
+          break;
+        case "setRepeatMode":
+          if (data && typeof data.mode === "number" && typeof Spicetify.Player.setRepeat === "function") {
+            await Spicetify.Player.setRepeat(data.mode);
+            await updateBackend();
           }
           break;
         case "playTrack":

@@ -3,10 +3,17 @@
 
 import http from 'node:http';
 
+const normalizeRepeatMode = (mode) => {
+  const numeric = Number(mode);
+  return numeric === 1 || numeric === 2 ? numeric : 0;
+};
+
 // Store queue data
 let currentQueue = {
   nowPlaying: {},
-  queue: []
+  queue: [],
+  repeatMode: 0,
+  shuffle: false,
 };
 
 // Track the renderer window to send IPC updates to
@@ -52,19 +59,30 @@ export function startQueueServer(mainWindow) {
       req.on('end', () => {
         try {
           const data = JSON.parse(body);
-          currentQueue = data;
-          console.log('Queue updated:', data);
+          const normalizedRepeatMode = normalizeRepeatMode(
+            data.repeatMode ?? data.nowPlaying?.repeatMode
+          );
+          const normalizedShuffle = typeof data.shuffle === 'boolean'
+            ? data.shuffle
+            : Boolean(data.nowPlaying?.shuffle);
+
+          currentQueue = {
+            ...data,
+            repeatMode: normalizedRepeatMode,
+            shuffle: normalizedShuffle,
+          };
+          console.log('Queue updated:', currentQueue);
           
           // Update play state if available
-          if (data.nowPlaying && data.nowPlaying.isPlaying !== undefined) {
+          if (currentQueue.nowPlaying && currentQueue.nowPlaying.isPlaying !== undefined) {
             // Update the main process about external play state changes
-            rendererWindow?.webContents.emit('external-play-state-changed', data.nowPlaying.isPlaying);
+            rendererWindow?.webContents.emit('external-play-state-changed', currentQueue.nowPlaying.isPlaying);
             // Send play state to renderer
-            rendererWindow?.webContents.send('play-state-changed', data.nowPlaying.isPlaying);
+            rendererWindow?.webContents.send('play-state-changed', currentQueue.nowPlaying.isPlaying);
           }
           
           // Send the queue data to the renderer process
-          rendererWindow?.webContents.send('queue-updated', data);
+          rendererWindow?.webContents.send('queue-updated', currentQueue);
           
           res.writeHead(200, { 'Content-Type': 'application/json' });
           res.end(JSON.stringify({ status: 'success' }));

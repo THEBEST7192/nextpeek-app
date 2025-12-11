@@ -814,6 +814,19 @@ app.whenReady().then(async () => {
     return true;
   });
 
+  ipcMain.handle('set-shuffle-state', (event, shuffleState) => {
+    const desiredState = Boolean(shuffleState);
+    sendCommand('setShuffle', { state: desiredState });
+    return desiredState;
+  });
+
+  ipcMain.handle('set-repeat-mode', (event, repeatMode) => {
+    const numericMode = Number(repeatMode);
+    const normalizedMode = [0, 1, 2].includes(numericMode) ? numericMode : 0;
+    sendCommand('setRepeatMode', { mode: normalizedMode });
+    return normalizedMode;
+  });
+
   // On OS X it's common to re-create a window in the app when the
   // dock icon is clicked and there are no other windows open.
   app.on('activate', () => {

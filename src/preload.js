@@ -46,4 +46,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
   playPlaylist: (playlistUri) => ipcRenderer.invoke('play-playlist', playlistUri),
   // Track playback
   playTrack: (trackUri) => ipcRenderer.invoke('play-track', trackUri),
+  setShuffleState: (state) => ipcRenderer.invoke('set-shuffle-state', state),
+  setRepeatMode: (mode) => ipcRenderer.invoke('set-repeat-mode', mode),
 });

@@ -24,6 +24,11 @@ const getInitials = (title = '') => {
   return initials || '?';
 };
 
+const normalizeRepeatMode = (value) => {
+  const numeric = Number(value);
+  return Number.isFinite(numeric) && [0, 1, 2].includes(numeric) ? numeric : 0;
+};
+
 const NowPlaying = () => {
   const [currentlyPlaying, setCurrentlyPlaying] = useState(null);
   const [queue, setQueue] = useState([]);
@@ -32,7 +37,9 @@ const NowPlaying = () => {
   const [currentTheme, setCurrentTheme] = useState(() => document.body.dataset.theme || 'solid');
   const [customImageTextColor, setCustomImageTextColor] = useState(() => document.body.dataset.customImageTextColor || 'white');
   const [isShuffleOn, setIsShuffleOn] = useState(false);
-  const [isRepeatOn, setIsRepeatOn] = useState(false);
+  const [repeatMode, setRepeatMode] = useState(0);
+  const manualControlTimeout = useRef(null);
+
   const manualChangeTimeout = useRef(null);
   const lastSpotifyState = useRef(null);
 
@@ -51,6 +58,23 @@ const NowPlaying = () => {
           setIsPlaying(false);
           lastSpotifyState.current = null;
         }
+        if (typeof data.shuffle === 'boolean') {
+          if (!manualControlTimeout.current?.shuffle) {
+            setIsShuffleOn(data.shuffle);
+          }
+        } else if (typeof data.nowPlaying?.shuffle === 'boolean') {
+          if (!manualControlTimeout.current?.shuffle) {
+            setIsShuffleOn(data.nowPlaying.shuffle);
+          }
+        }
+
+        const incomingRepeatMode = normalizeRepeatMode(
+          data.repeatMode ?? data.nowPlaying?.repeatMode
+        );
+        if (!manualControlTimeout.current?.repeat) {
+          setRepeatMode(incomingRepeatMode);
+        }
+
         if (data.queue) {
           // Filter out songs after delimiter
           const delimiterIndex = data.queue.findIndex(song => song.uri === 'spotify:delimiter');
@@ -86,6 +110,16 @@ const NowPlaying = () => {
           clearTimeout(manualChangeTimeout.current);
           manualChangeTimeout.current = null;
         }
+        if (manualControlTimeout.current) {
+          if (manualControlTimeout.current.shuffle?.timeout) {
+            clearTimeout(manualControlTimeout.current.shuffle.timeout);
+          }
+          if (manualControlTimeout.current.repeat?.timeout) {
+            clearTimeout(manualControlTimeout.current.repeat.timeout);
+          }
+          manualControlTimeout.current = null;
+        }
+
         if (typeof unsubscribe === 'function') {
           unsubscribe();
         } else {
@@ -97,38 +131,88 @@ const NowPlaying = () => {
     return undefined;
   }, []);
 
-  useEffect(() => {
-    if (window.electronAPI?.onThemeChange) {
-      const handler = (event, payload) => {
-        if (typeof payload === 'string') {
-          setCurrentTheme(payload);
-          return;
-        }
-
-        if (payload && typeof payload === 'object') {
-          if (typeof payload.theme === 'string') {
-            setCurrentTheme(payload.theme);
-          }
-
-          if (typeof payload.customImageTextColor === 'string') {
-            setCustomImageTextColor(payload.customImageTextColor);
-          }
-        }
-      };
-
-      const unsubscribe = window.electronAPI.onThemeChange(handler);
-
-      return () => {
-        if (typeof unsubscribe === 'function') {
-          unsubscribe();
-        } else {
-          window.electronAPI.removeThemeChangeListener?.(handler);
-        }
-      };
+  const scheduleControlSyncReset = useCallback((type) => {
+    if (!manualControlTimeout.current) {
+      manualControlTimeout.current = {};
     }
 
-    return undefined;
+    const existing = manualControlTimeout.current[type];
+    if (existing?.timeout) {
+      clearTimeout(existing.timeout);
+    }
+
+    const timeout = setTimeout(() => {
+      if (manualControlTimeout.current?.[type]) {
+        manualControlTimeout.current[type] = null;
+      }
+    }, 1500);
+
+    manualControlTimeout.current[type] = { timeout };
   }, []);
+
+  const handleToggleShuffle = useCallback(async () => {
+    if (!window.electronAPI?.setShuffleState) {
+      return;
+    }
+
+    const nextState = !isShuffleOn;
+    setIsShuffleOn(nextState);
+    scheduleControlSyncReset('shuffle');
+
+    try {
+      await window.electronAPI.setShuffleState(nextState);
+    } catch (error) {
+      console.error('Failed to set shuffle state:', error);
+    }
+  }, [isShuffleOn, scheduleControlSyncReset]);
+
+  const cycleRepeatMode = (mode) => {
+    switch (mode) {
+      case 0:
+        return 1; // repeat all
+      case 1:
+        return 2; // repeat one
+      default:
+        return 0; // back to no repeat
+    }
+  };
+
+  const handleToggleRepeat = useCallback(async () => {
+    if (!window.electronAPI?.setRepeatMode) {
+      return;
+    }
+
+    const nextMode = cycleRepeatMode(repeatMode);
+    setRepeatMode(nextMode);
+    scheduleControlSyncReset('repeat');
+
+    try {
+      await window.electronAPI.setRepeatMode(nextMode);
+    } catch (error) {
+      console.error('Failed to set repeat mode:', error);
+    }
+  }, [repeatMode, scheduleControlSyncReset]);
+
+  const repeatAriaLabel = useMemo(() => {
+    switch (repeatMode) {
+      case 2:
+        return 'Repeat one enabled';
+      case 1:
+        return 'Repeat all enabled';
+      default:
+        return 'Repeat off';
+    }
+  }, [repeatMode]);
+
+  const repeatButtonClass = useMemo(() => {
+    if (repeatMode === 2) {
+      return 'control-button active repeat-one';
+    }
+    if (repeatMode === 1) {
+      return 'control-button active';
+    }
+    return 'control-button';
+  }, [repeatMode]);
 
   const handleTogglePlayPause = useCallback(() => {
     if (!window.electronAPI?.togglePlayPause) {
@@ -291,15 +375,15 @@ const NowPlaying = () => {
         <div className="playback-controls">
           <button 
             className={`control-button ${isShuffleOn ? 'active' : ''}`}
-            onClick={() => setIsShuffleOn(!isShuffleOn)}
+            onClick={handleToggleShuffle}
             aria-label={isShuffleOn ? 'Disable shuffle' : 'Enable shuffle'}
           >
             <img src={shuffleIcon} alt="" />
           </button>
           <button 
-            className={`control-button ${isRepeatOn ? 'active' : ''}`}
-            onClick={() => setIsRepeatOn(!isRepeatOn)}
-            aria-label={isRepeatOn ? 'Disable repeat' : 'Enable repeat'}
+            className={repeatButtonClass}
+            onClick={handleToggleRepeat}
+            aria-label={repeatAriaLabel}
           >
             <img src={repeatIcon} alt="" />
           </button>
