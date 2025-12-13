@@ -32,10 +32,17 @@
         ? Spicetify.Player.getRepeat()
         : 0;
       const repeatMode = Number.isFinite(repeatModeRaw) ? repeatModeRaw : Number(repeatModeRaw) || 0;
-      const shuffleStateRaw = typeof Spicetify.Player.getShuffle === 'function'
-        ? Spicetify.Player.getShuffle()
-        : false;
-      const shuffleState = Boolean(shuffleStateRaw);
+      // Thanks to @sanooj.es on Discord for this function
+      // Get current shuffle mode: 0 = off, 1 = normal, 2 = smart
+      const getShuffle = () => {
+          const isShuffle = Spicetify.Player.origin._state.shuffle;
+          const isSmartShuffle = Spicetify.Player.origin._state.smartShuffle;
+
+          if (!isShuffle) return 0;   // shuffle OFF
+          if (!isSmartShuffle) return 1; // normal shuffle
+          return 2;                    // smart shuffle
+      };
+      const shuffleState = getShuffle();
 
       const nowPlaying = current
         ? {
@@ -132,8 +139,12 @@
           }
           break;
         case "setShuffle":
-          if (data && typeof data.state === "boolean" && typeof Spicetify.Player.setShuffle === "function") {
-            await Spicetify.Player.setShuffle(data.state);
+          if (data && "state" in data) {
+            const rawState = data.state;
+            const numericState = Number(rawState);
+            // Only allow explicit 0/1 shuffle toggles coming from the app UI
+            const normalizedState = numericState === 1 ? 1 : 0;
+            Spicetify.Player.origin.setShuffle(Boolean(normalizedState));
             await updateBackend();
           }
           break;

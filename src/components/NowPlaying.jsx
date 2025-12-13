@@ -36,7 +36,7 @@ const NowPlaying = () => {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [currentTheme, setCurrentTheme] = useState(() => document.body.dataset.theme || 'solid');
   const [customImageTextColor, setCustomImageTextColor] = useState(() => document.body.dataset.customImageTextColor || 'white');
-  const [isShuffleOn, setIsShuffleOn] = useState(false);
+  const [shuffleMode, setShuffleMode] = useState(0); // 0: off, 1: regular, 2: smart
   const [repeatMode, setRepeatMode] = useState(0);
   const manualControlTimeout = useRef(null);
 
@@ -58,13 +58,13 @@ const NowPlaying = () => {
           setIsPlaying(false);
           lastSpotifyState.current = null;
         }
-        if (typeof data.shuffle === 'boolean') {
+        if (typeof data.shuffle === 'number') {
           if (!manualControlTimeout.current?.shuffle) {
-            setIsShuffleOn(data.shuffle);
+            setShuffleMode(data.shuffle);
           }
-        } else if (typeof data.nowPlaying?.shuffle === 'boolean') {
+        } else if (typeof data.nowPlaying?.shuffle === 'number') {
           if (!manualControlTimeout.current?.shuffle) {
-            setIsShuffleOn(data.nowPlaying.shuffle);
+            setShuffleMode(data.nowPlaying.shuffle);
           }
         }
 
@@ -155,8 +155,12 @@ const NowPlaying = () => {
       return;
     }
 
-    const nextState = !isShuffleOn;
-    setIsShuffleOn(nextState);
+    // Treat any non-zero UI state (1 or smart 2) as "on" to keep toggling binary
+    const normalizedCurrent = shuffleMode === 0 ? 0 : 1;
+    // Flip between 0->1 or 1->0; smart mode is only displayed and never emitted
+    const nextState = normalizedCurrent === 1 ? 0 : 1;
+
+    setShuffleMode(nextState);
     scheduleControlSyncReset('shuffle');
 
     try {
@@ -164,7 +168,26 @@ const NowPlaying = () => {
     } catch (error) {
       console.error('Failed to set shuffle state:', error);
     }
-  }, [isShuffleOn, scheduleControlSyncReset]);
+  }, [shuffleMode, scheduleControlSyncReset]);
+
+  const shuffleButtonProps = useMemo(() => {
+    if (shuffleMode === 2) {
+      return {
+        className: 'control-button active smart-shuffle',
+        ariaLabel: 'Smart shuffle'
+      };
+    }
+    if (shuffleMode === 1) {
+      return {
+        className: 'control-button active',
+        ariaLabel: 'Disable shuffle'
+      };
+    }
+    return {
+      className: 'control-button',
+      ariaLabel: 'Enable shuffle'
+    };
+  }, [shuffleMode]);
 
   const cycleRepeatMode = (mode) => {
     switch (mode) {
@@ -374,11 +397,12 @@ const NowPlaying = () => {
         <h2 className="section-title">Now Playing</h2>
         <div className="playback-controls">
           <button 
-            className={`control-button ${isShuffleOn ? 'active' : ''}`}
+            className={shuffleButtonProps.className}
             onClick={handleToggleShuffle}
-            aria-label={isShuffleOn ? 'Disable shuffle' : 'Enable shuffle'}
+            aria-label={shuffleButtonProps.ariaLabel}
           >
             <img src={shuffleIcon} alt="" />
+            {shuffleMode === 2 && <span className="smart-shuffle-star">✦</span>}
           </button>
           <button 
             className={repeatButtonClass}

@@ -815,9 +815,10 @@ app.whenReady().then(async () => {
   });
 
   ipcMain.handle('set-shuffle-state', (event, shuffleState) => {
-    const desiredState = Boolean(shuffleState);
-    sendCommand('setShuffle', { state: desiredState });
-    return desiredState;
+    const numericState = Number(shuffleState);
+    const normalizedState = numericState === 1 ? 1 : 0;
+    sendCommand('setShuffle', { state: normalizedState });
+    return normalizedState;
   });
 
   ipcMain.handle('set-repeat-mode', (event, repeatMode) => {
