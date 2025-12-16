@@ -24,6 +24,7 @@ let pendingCommand = null;
 
 // Store user playlists
 let userPlaylists = [];
+let recentlyPlayedTracks = [];
 
 // Store pending playlist requests
 let pendingPlaylistRequests = [];
@@ -158,6 +159,32 @@ export function startQueueServer(mainWindow) {
         }
       });
     }
+    // Handle recently played tracks response from Spotify bridge
+    else if (req.url === '/api/recentlyPlayedResponse' && req.method === 'POST') {
+      let body = '';
+      
+      req.on('data', (chunk) => {
+        body += chunk.toString();
+      });
+      
+      req.on('end', () => {
+        try {
+          const data = JSON.parse(body);
+          recentlyPlayedTracks = data.recentlyPlayed;
+          console.log('Recently played tracks received:', recentlyPlayedTracks.length);
+          
+          // Send the recently played tracks to the renderer process
+          rendererWindow?.webContents.send('recently-played-updated', recentlyPlayedTracks);
+          
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ status: 'success' }));
+        } catch (error) {
+          console.error('Error parsing recently played tracks data:', error);
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: 'Invalid JSON data' }));
+        }
+      });
+    }
     // Handle unknown requests
     else {
       res.writeHead(404, { 'Content-Type': 'application/json' });
@@ -183,4 +210,10 @@ export function sendCommand(action, data = null) {
 // Get current queue data
 export function getCurrentQueue() {
   return currentQueue;
+}
+
+export function getRecentlyPlayed() {
+  pendingCommand = { action: 'getRecentlyPlayed' };
+  console.log('Command set: getRecentlyPlayed');
+  return true;
 }

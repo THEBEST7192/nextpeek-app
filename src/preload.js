@@ -48,4 +48,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   playTrack: (trackUri) => ipcRenderer.invoke('play-track', trackUri),
   setShuffleState: (state) => ipcRenderer.invoke('set-shuffle-state', state),
   setRepeatMode: (mode) => ipcRenderer.invoke('set-repeat-mode', mode),
+  getRecentlyPlayed: () => ipcRenderer.invoke('get-recently-played'),
+  onRecentlyPlayedUpdated: (callback) => ipcRenderer.on('recently-played-updated', callback),
+  removeRecentlyPlayedListener: () => ipcRenderer.removeAllListeners('recently-played-updated'),
 });

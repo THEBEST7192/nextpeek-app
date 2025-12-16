@@ -38,15 +38,42 @@ const NowPlaying = () => {
   const [customImageTextColor, setCustomImageTextColor] = useState(() => document.body.dataset.customImageTextColor || 'white');
   const [shuffleMode, setShuffleMode] = useState(0); // 0: off, 1: regular, 2: smart
   const [repeatMode, setRepeatMode] = useState(0);
+  const [viewMode, setViewMode] = useState('queue'); // 'queue' or 'history'
+  const [recentlyPlayed, setRecentlyPlayed] = useState([]);
   const manualControlTimeout = useRef(null);
+  const viewModeRef = useRef(viewMode);
+  const prevCurrentlyPlayingUri = useRef(null);
+
+  useEffect(() => {
+    viewModeRef.current = viewMode;
+  }, [viewMode]);
 
   const manualChangeTimeout = useRef(null);
   const lastSpotifyState = useRef(null);
 
   useEffect(() => {
+    if (window.electronAPI && window.electronAPI.onRecentlyPlayedUpdated) {
+      const handleRecentlyPlayedUpdate = (event, data) => {
+        // console.log('Received recentlyPlayed songs:', data);
+        if (viewModeRef.current === 'history') {
+          setRecentlyPlayed(data || []);
+        }
+      };
+      window.electronAPI.onRecentlyPlayedUpdated(handleRecentlyPlayedUpdate);
+
+      return () => {
+        if (window.electronAPI.removeRecentlyPlayedListener) {
+          window.electronAPI.removeRecentlyPlayedListener();
+        }
+      };
+    }
+  }, []);
+
+  useEffect(() => {
     // Listen for queue updates from the main process
     if (window.electronAPI && window.electronAPI.onQueueUpdated) {
       const handleQueueUpdate = (event, data) => {
+        // console.log('onQueueUpdated received data:', data);
         if (data.nowPlaying && data.nowPlaying.title) {
           setCurrentlyPlaying(data.nowPlaying);
           if (typeof data.nowPlaying.isPlaying === 'boolean') {
@@ -387,8 +414,52 @@ const NowPlaying = () => {
     }
   }, []);
 
+  const handleViewQueue = () => setViewMode('queue');
+   
+  const handleViewHistory = () => {
+    console.log("Switching to History view");
+    setViewMode('history');
+  };
+
+  useEffect(() => {
+      if (window.electronAPI?.getRecentlyPlayed && viewMode === 'history') {
+        // console.log("Requesting recently played tracks due to viewMode or currentlyPlaying change...");
+        window.electronAPI.getRecentlyPlayed();
+    }
+  }, [viewMode]);
+
+  useEffect(() => {
+    if (window.electronAPI?.getRecentlyPlayed && viewMode === 'history') {
+      const currentUri = currentlyPlaying?.uri;
+      // console.log('currentlyPlaying URI effect: currentUri=', currentUri, 'prevUri=', prevCurrentlyPlayingUri.current);
+      if (currentUri && currentUri !== prevCurrentlyPlayingUri.current) {
+        // console.log("Requesting recently played tracks due to currentlyPlaying URI change...");
+        window.electronAPI.getRecentlyPlayed();
+      }
+      prevCurrentlyPlayingUri.current = currentUri;
+    }
+  }, [currentlyPlaying?.uri, viewMode]);
+
+  const dedupedRecentlyPlayed = useMemo(() => {
+    let tracksToDedupe = recentlyPlayed;
+
+    // If there's a currently playing song and it's the first in recentlyPlayed, cut out the first song.
+    if (currentlyPlaying && tracksToDedupe.length > 0 && tracksToDedupe[0].uri === currentlyPlaying.uri) {
+      tracksToDedupe = tracksToDedupe.slice(1);
+    }
+
+    const result = [];
+    for (const item of tracksToDedupe) {
+      const last = result[result.length - 1];
+      if (!last || last?.uri !== item?.uri) {
+        result.push(item);
+      }
+    }
+    return result;
+  }, [recentlyPlayed, currentlyPlaying]);
+
   return (
-    <div className="now-playing">
+     <div className="now-playing">
       <SearchBar
         onPlaylistSelect={handlePlaylistSelect}
         onSettingsClick={() => setIsSettingsOpen(true)}
@@ -429,20 +500,44 @@ const NowPlaying = () => {
             </div>
           </div>
         ) : (
-          <p className="no-playing-message">Nothing is currently playing</p>
+          <div className="no-playing-message"><span>Nothing is currently playing</span><div className="empty-message-spacer"></div></div>
         )}
       </div>
 
-      <h2 className="section-title">Queue</h2>
-      <div className="queue-section">
-        {queue.length > 0 ? (
-          <div className="queue-list">
-            {queue.map((song, index) => renderQueueItem(song, index))}
-          </div>
-        ) : (
-          <p className="queue-empty-message">Queue is empty</p>
-        )}
+      <div className="view-toggle">
+        <h2
+          className={`section-title ${viewMode === 'queue' ? 'active' : ''}`}
+          onClick={handleViewQueue}
+        >
+          Queue
+        </h2>
+        <h2
+          className={`section-title ${viewMode === 'history' ? 'active' : ''}`}
+          onClick={handleViewHistory}
+        >
+          History
+        </h2>
       </div>
+
+       <div className="queue-section">
+         {viewMode === 'queue' ? (
+           queue.length > 0 ? (
+             <div className="queue-list">
+               {queue.map((song, index) => renderQueueItem(song, index))}
+             </div>
+           ) : (
+             <div className="queue-empty-message"><span>Queue is empty</span><div className="empty-message-spacer"></div></div>
+           )
+         ) : (
+           dedupedRecentlyPlayed.length > 0 ? (
+             <div className="queue-list">
+               {dedupedRecentlyPlayed.map((song, index) => renderQueueItem(song, index))}
+             </div>
+           ) : (
+             <div className="queue-empty-message"><span>No recently played tracks</span><div className="empty-message-spacer"></div></div>
+           )
+         )}
+       </div>
       <SettingsModal
         isOpen={isSettingsOpen}
         onClose={() => setIsSettingsOpen(false)}

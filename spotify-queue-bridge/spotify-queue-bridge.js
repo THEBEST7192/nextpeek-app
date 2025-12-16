@@ -49,11 +49,14 @@
             title: current.title,
             artist: current.artist_name,
             album_cover: current.image_url,
+            uri: Spicetify.Player.data?.item?.uri,
             isPlaying: Spicetify.Player.isPlaying(),
             repeatMode,
             shuffle: shuffleState,
           }
         : {};
+
+      // // console.log('Bridge sending nowPlaying:', nowPlaying);
 
       const q =
         queue?.queue?.next_tracks?.map((t) => {
@@ -82,7 +85,6 @@
     }
   }
 
-
   async function getUserPlaylists() {
     try {
       const root = await Spicetify.Platform.RootlistAPI.getContents();
@@ -101,10 +103,32 @@
     }
   }
 
+  async function getRecentlyPlayedTracks() {
+    try {
+      const timestamp = Date.now();
+      const response = await Spicetify.CosmosAsync.get(`https://api.spotify.com/v1/me/player/recently-played?limit=50&_t=${timestamp}`);
+      // console.log("Fetched recently played tracks:", response.items.length);
+      return response.items.map(item => ({
+        title: item.track.name,
+        artist: item.track.artists.map(artist => artist.name).join(', '),
+        album_cover: item.track.album.images[0]?.url,
+        uri: item.track.uri,
+        played_at: item.played_at,
+      }));
+    } catch (err) {
+      console.error("Failed to get recently played tracks:", err);
+      return [];
+    }
+  }
+
   async function checkCommands() {
     try {
       const res = await fetch("http://localhost:7192/api/command");
       const { action, data } = await res.json();
+
+      if (action !== 'none') {
+        console.log("Received command:", action);
+      }
 
       switch (action) {
         case "play":
@@ -125,6 +149,14 @@
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ playlists }),
+          });
+          break;
+        case "getRecentlyPlayed":
+          const recentlyPlayed = await getRecentlyPlayedTracks();
+          await fetch("http://localhost:7192/api/recentlyPlayedResponse", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ recentlyPlayed }),
           });
           break;
         case "playPlaylist":

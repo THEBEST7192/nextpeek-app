@@ -8,7 +8,7 @@ import { promises as fs } from 'node:fs';
 import { pathToFileURL } from 'node:url';
 
 // Import queue service
-import { startQueueServer, sendCommand, getCurrentQueue, setQueueWindow } from './services/queueService.js';
+import { startQueueServer, sendCommand, getCurrentQueue, setQueueWindow, getRecentlyPlayed } from './services/queueService.js';
 
 dotenv.config();
 
@@ -792,6 +792,10 @@ app.whenReady().then(async () => {
   ipcMain.handle('start-queue-listener', () => {
     startQueueListener();
     return true;
+  });
+
+  ipcMain.handle('get-recently-played', () => {
+    return getRecentlyPlayed();
   });
 
   ipcMain.handle('next-track', () => {
