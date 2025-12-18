@@ -73,7 +73,13 @@ const NowPlaying = () => {
     // Listen for queue updates from the main process
     if (window.electronAPI && window.electronAPI.onQueueUpdated) {
       const handleQueueUpdate = (event, data) => {
-        // console.log('onQueueUpdated received data:', data);
+        console.log('onQueueUpdated received data:', {
+          duration: data.nowPlaying?.duration,
+          progress: data.nowPlaying?.progress,
+          formattedDuration: data.nowPlaying?.formattedDuration,
+          formattedProgress: data.nowPlaying?.formattedProgress,
+          progressPercent: data.nowPlaying?.progressPercent,
+        });
         if (data.nowPlaying && data.nowPlaying.title) {
           setCurrentlyPlaying(data.nowPlaying);
           if (typeof data.nowPlaying.isPlaying === 'boolean') {
@@ -441,19 +447,27 @@ const NowPlaying = () => {
   }, [currentlyPlaying?.uri, viewMode]);
 
   const dedupedRecentlyPlayed = useMemo(() => {
-    let tracksToDedupe = recentlyPlayed;
-
-    // If there's a currently playing song and it's the first in recentlyPlayed, cut out the first song.
-    if (currentlyPlaying && tracksToDedupe.length > 0 && tracksToDedupe[0].uri === currentlyPlaying.uri) {
-      tracksToDedupe = tracksToDedupe.slice(1);
+    if (!recentlyPlayed || recentlyPlayed.length === 0) {
+      return [];
     }
 
+    const currentUri = currentlyPlaying?.uri;
     const result = [];
-    for (const item of tracksToDedupe) {
-      const last = result[result.length - 1];
-      if (!last || last?.uri !== item?.uri) {
-        result.push(item);
+    let lastAddedUri = null;
+
+    for (const item of recentlyPlayed) {
+      // Skip if this item is the currently playing song
+      if (currentUri && item.uri === currentUri) {
+        continue;
       }
+
+      // Skip if this item is a consecutive duplicate of the last added item
+      if (item.uri === lastAddedUri) {
+        continue;
+      }
+
+      result.push(item);
+      lastAddedUri = item.uri;
     }
     return result;
   }, [recentlyPlayed, currentlyPlaying]);
@@ -494,9 +508,20 @@ const NowPlaying = () => {
                 overlayIcon={isPlaying ? pauseIcon : playIcon}
               />
               <div className="song-details">
-                <p className="song-title truncate-text">{currentlyPlaying.title}</p>
-                <p className="song-artist">{currentlyPlaying.artist}</p>
+                <p className="song-title">{currentlyPlaying.title}</p>
+                <p className="song-artist truncate-text">{currentlyPlaying.artist}</p>
               </div>
+            <div className="song-progress-container">
+              <div
+                className="song-progress-bar"
+                style={{ width: `${(currentlyPlaying.progressPercent * 100) || 0}%` }}
+              ></div>
+            </div>
+            <div className="song-time-display">
+              <span className="song-progress-time">{currentlyPlaying.formattedProgress || '00:00'}</span>
+          /
+          <span className="song-duration-time">{currentlyPlaying.formattedDuration || '00:00'}</span>
+            </div>
             </div>
           </div>
         ) : (

@@ -1272,7 +1272,9 @@ body[data-theme='customImage'][data-custom-image-text-color='white'] .control-bu
 }
 
 .now-playing-section {
-  margin-bottom:8px;
+  margin-bottom: 8px;
+  position: relative;
+  overflow: hidden;
 }
 
 .queue-section {
@@ -1617,7 +1619,7 @@ body[data-theme='customImage'][data-custom-image-text-color='white'] .control-bu
 .song-details {
   display: flex;
   flex-direction: column;
-  gap: 3px; 
+  gap: 3px;
   flex: 1;
   min-width: 0;
 }
@@ -1639,6 +1641,56 @@ body[data-theme='customImage'][data-custom-image-text-color='white'] .control-bu
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.now-playing-section .song-artist {
+  margin-right: 70px;
+  overflow: hidden;
+}
+
+.song-progress-container {
+  height: 4px; /* Fixed height for the progress bar */
+  background-color: rgba(255, 255, 255, 0.2);
+  width: 100%;
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  overflow: hidden; /* Make bar not exceed its container */
+  border-bottom-left-radius: 10px;
+  border-bottom-right-radius: 10px;
+}
+
+.song-progress-bar {
+  height: 100%;
+  background-color: #1DB954; /* Spotify green */
+  width: 0%; /* Controlled by inline style */
+}
+
+body[data-theme='straightAlly'] .song-progress-bar {
+  background: linear-gradient(to right, red, orange, yellow, green, blue, indigo, violet);
+  transition: width 0.1s linear; 
+}
+
+.song-time-display {
+  position: absolute;
+  bottom: 8px; 
+  right: 8px; 
+  display: flex;
+  gap: 4px;
+  font-size: 15px;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+body[data-custom-image-text-color='black'] .song-time-display {
+  color: rgba(0, 0, 0, 0.7);
+}
+
+.song-progress-time {
+  font-weight: bold;
+}
+
+.song-duration-time {
+  opacity: 0.8;
 }
 
 .truncate-text {

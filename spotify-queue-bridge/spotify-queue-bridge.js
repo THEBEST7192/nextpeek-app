@@ -47,16 +47,20 @@
       const nowPlaying = current
         ? {
             title: current.title,
-            artist: current.artist_name,
+            artist: Spicetify.Player.data.item?.artists?.map(artist => artist.name).join(', '),
             album_cover: current.image_url,
             uri: Spicetify.Player.data?.item?.uri,
             isPlaying: Spicetify.Player.isPlaying(),
             repeatMode,
             shuffle: shuffleState,
+            duration: Spicetify.Player.getDuration(),
+            progress: Spicetify.Player.getProgress(),
+            formattedDuration: Spicetify.Player.formatTime(Spicetify.Player.getDuration()),
+            formattedProgress: Spicetify.Player.formatTime(Spicetify.Player.getProgress()),
+            progressPercent: Spicetify.Player.getProgressPercent(),
           }
         : {};
 
-      // // console.log('Bridge sending nowPlaying:', nowPlaying);
 
       const q =
         queue?.queue?.next_tracks?.map((t) => {
@@ -64,7 +68,7 @@
           const trackUri = t.uri || t.contextTrack?.uri || t.track?.uri || t.item?.uri || t.contextTrack?.metadata?.uri || t.metadata?.uri;
           return {
             title: t.contextTrack?.metadata?.title || t.track?.name || t.metadata?.title || t.item?.title || t.name,
-            artist: t.contextTrack?.metadata?.artist_name || t.track?.artists?.[0]?.name || t.item?.artists?.[0]?.name || t.metadata?.artist_name || (t.artists?.[0]?.name ?? "Unknown"),
+            artist: t.contextTrack?.metadata ? Object.keys(t.contextTrack.metadata).filter(k => k.startsWith('artist_name')).sort((a, b) => a.localeCompare(b, undefined, { numeric: true })).map(k => t.contextTrack.metadata[k]).filter(Boolean).join(', ') || "Unknown Artist" : "Unknown Artist",
             album_cover: t.contextTrack?.metadata?.image_url || t.track?.album?.images?.[0]?.url || t.metadata?.image_url || t.item?.album?.images?.[0]?.url || t.album?.images?.[0]?.url,
             uri: trackUri,
           }
@@ -256,7 +260,7 @@
   Spicetify.Player.addEventListener("onplaypause", playPauseUpdateBackend); 
   Spicetify.Player.addEventListener("onprogress", debouncedUpdateBackend);
 
-  setInterval(updateBackend, 2000); 
+  setInterval(updateBackend, 500); 
   setInterval(checkCommands, 500); 
 
   updateBackend();
