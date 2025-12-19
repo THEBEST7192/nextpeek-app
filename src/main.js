@@ -818,6 +818,19 @@ app.whenReady().then(async () => {
     return true;
   });
 
+  ipcMain.handle('seek-track', (event, percent) => {
+    const numericPercent = Number(percent);
+    const clampedPercent = Number.isFinite(numericPercent)
+      ? Math.min(1, Math.max(0, numericPercent))
+      : 0;
+
+    sendCommand('seek', {
+      positionPercent: clampedPercent,
+    });
+
+    return clampedPercent;
+  });
+
   ipcMain.handle('set-shuffle-state', (event, shuffleState) => {
     const numericState = Number(shuffleState);
     const normalizedState = numericState === 1 ? 1 : 0;

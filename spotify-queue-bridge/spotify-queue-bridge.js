@@ -235,6 +235,26 @@
             }
           }
           break;
+        case "seek": {
+          if (!data || typeof data !== "object") {
+            break;
+          }
+
+          const rawPercent = data.positionPercent ?? data.position;
+          const hasPercent = typeof rawPercent === "number" && Number.isFinite(rawPercent);
+          if (!hasPercent) {
+            break;
+          }
+
+          const percent = Math.min(1, Math.max(0, rawPercent));
+
+          try {
+            Spicetify.Player.seek(percent);
+          } catch (err) {
+            console.error("Failed to seek track:", err);
+          }
+          break;
+        }
         default:
           break;
       }

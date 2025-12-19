@@ -1648,6 +1648,20 @@ body[data-theme='customImage'][data-custom-image-text-color='white'] .control-bu
   overflow: hidden;
 }
 
+.song-progress-hitbox {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 10px 0;
+  cursor: pointer;
+  touch-action: none;
+}
+
+.song-progress-hitbox .song-progress-container {
+  pointer-events: none;
+}
+
 .song-progress-container {
   height: 4px; /* Fixed height for the progress bar */
   background-color: rgba(255, 255, 255, 0.2);

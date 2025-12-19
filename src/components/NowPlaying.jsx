@@ -29,6 +29,15 @@ const normalizeRepeatMode = (value) => {
   return Number.isFinite(numeric) && [0, 1, 2].includes(numeric) ? numeric : 0;
 };
 
+const clampPercent = (value) => {
+  if (!Number.isFinite(value)) {
+    return 0;
+  }
+  if (value < 0) return 0;
+  if (value > 1) return 1;
+  return value;
+};
+
 const NowPlaying = () => {
   const [currentlyPlaying, setCurrentlyPlaying] = useState(null);
   const [queue, setQueue] = useState([]);
@@ -41,15 +50,160 @@ const NowPlaying = () => {
   const [viewMode, setViewMode] = useState('queue'); // 'queue' or 'history'
   const [recentlyPlayed, setRecentlyPlayed] = useState([]);
   const manualControlTimeout = useRef(null);
+  const manualChangeTimeout = useRef(null);
+  const lastSpotifyState = useRef(null);
   const viewModeRef = useRef(viewMode);
   const prevCurrentlyPlayingUri = useRef(null);
+  const progressHitboxRef = useRef(null);
+  const progressBarRef = useRef(null);
+  const manualSeekTimeoutRef = useRef(null);
+
+  const [isSeeking, setIsSeeking] = useState(false);
+  const [pendingSeekPercent, setPendingSeekPercent] = useState(null);
+  const [manualSeekPercent, setManualSeekPercent] = useState(null);
 
   useEffect(() => {
     viewModeRef.current = viewMode;
   }, [viewMode]);
 
-  const manualChangeTimeout = useRef(null);
-  const lastSpotifyState = useRef(null);
+  const getPercentFromClientX = useCallback((clientX) => {
+    const rect = progressBarRef.current?.getBoundingClientRect();
+
+    if (!rect || rect.width === 0) {
+      return 0;
+    }
+    const rawPercent = (clientX - rect.left) / rect.width;
+    return clampPercent(rawPercent);
+  }, []);
+
+  const clearManualSeekHold = useCallback(() => {
+    if (manualSeekTimeoutRef.current) {
+      clearTimeout(manualSeekTimeoutRef.current);
+      manualSeekTimeoutRef.current = null;
+    }
+    setManualSeekPercent(null);
+  }, []);
+
+  const scheduleManualSeekFallbackClear = useCallback(() => {
+    if (manualSeekTimeoutRef.current) {
+      clearTimeout(manualSeekTimeoutRef.current);
+    }
+    manualSeekTimeoutRef.current = setTimeout(() => {
+      setManualSeekPercent(null);
+      manualSeekTimeoutRef.current = null;
+    }, 2000); // Reduced to 2 seconds for better responsiveness
+  }, []);
+
+  const performSeek = useCallback(async (percent) => {
+    if (!window.electronAPI?.seekTrack || !currentlyPlaying?.duration) {
+      return;
+    }
+    const clampedValue = clampPercent(percent);
+    
+    // Update the UI immediately
+    setManualSeekPercent(clampedValue);
+    
+    try {
+      await window.electronAPI.seekTrack(clampedValue);
+      // After successful seek, schedule clearing the manual seek hold
+      scheduleManualSeekFallbackClear();
+    } catch (error) {
+      console.error('Failed to seek track:', error);
+      // If seek fails, clear the manual seek immediately
+      clearManualSeekHold();
+    }
+  }, [currentlyPlaying?.duration]);
+
+  const handleSeekPointerDown = useCallback((event) => {
+    if (!currentlyPlaying?.duration) {
+      return;
+    }
+    event.preventDefault();
+    event.stopPropagation();
+    progressHitboxRef.current?.setPointerCapture?.(event.pointerId);
+
+    const percent = getPercentFromClientX(event.clientX);
+
+    setPendingSeekPercent(percent);
+    setIsSeeking(true);
+  }, [currentlyPlaying?.duration, getPercentFromClientX]);
+
+  const handleSeekPointerMove = useCallback((event) => {
+    if (!isSeeking) {
+      return;
+    }
+    event.preventDefault();
+    event.stopPropagation();
+    const percent = getPercentFromClientX(event.clientX);
+    setPendingSeekPercent(percent);
+  }, [getPercentFromClientX, isSeeking]);
+
+  const concludeSeek = useCallback(async (clientX, pointerId) => {
+    progressHitboxRef.current?.releasePointerCapture?.(pointerId);
+
+    const percent = getPercentFromClientX(clientX);
+    setIsSeeking(false);
+    setPendingSeekPercent(null);
+    setManualSeekPercent(percent);
+    scheduleManualSeekFallbackClear();
+    await performSeek(percent);
+  }, [getPercentFromClientX, performSeek, scheduleManualSeekFallbackClear]);
+
+  const handleSeekPointerUp = useCallback((event) => {
+    if (!isSeeking) {
+      return;
+    }
+    event.preventDefault();
+    event.stopPropagation();
+    concludeSeek(event.clientX, event.pointerId);
+  }, [concludeSeek, isSeeking]);
+
+  const handleSeekPointerCancel = useCallback((event) => {
+    if (!isSeeking) {
+      return;
+    }
+    event.preventDefault();
+    event.stopPropagation();
+    progressHitboxRef.current?.releasePointerCapture?.(event.pointerId);
+
+    setIsSeeking(false);
+    setPendingSeekPercent(null);
+  }, [isSeeking]);
+
+  const effectiveProgressPercent = useMemo(() => {
+    // Always respect manual seek position if it exists, regardless of isSeeking state
+    if (manualSeekPercent !== null) {
+      return clampPercent(manualSeekPercent);
+    }
+    if (isSeeking && pendingSeekPercent !== null) {
+      return clampPercent(pendingSeekPercent);
+    }
+    const actual = currentlyPlaying?.progressPercent ?? 0;
+    return clampPercent(actual);
+  }, [currentlyPlaying?.progressPercent, isSeeking, manualSeekPercent, pendingSeekPercent]);
+
+  const displayedProgressLabel = useMemo(() => {
+    const duration = currentlyPlaying?.duration || 0;
+    
+    // If we have a manual seek position, use that
+    if (manualSeekPercent !== null) {
+      const seconds = Math.floor(manualSeekPercent * duration / 1000);
+      const minutes = Math.floor(seconds / 60);
+      const remainingSeconds = seconds % 60;
+      return `${minutes}:${String(remainingSeconds).padStart(2, '0')}`;
+    }
+    
+    // If we're currently seeking, use the pending seek position
+    if (isSeeking && pendingSeekPercent !== null) {
+      const seconds = Math.floor(pendingSeekPercent * duration / 1000);
+      const minutes = Math.floor(seconds / 60);
+      const remainingSeconds = seconds % 60;
+      return `${minutes}:${String(remainingSeconds).padStart(2, '0')}`;
+    }
+    
+    // Otherwise, use the formatted progress from the currently playing track
+    return currentlyPlaying?.formattedProgress || '0:00';
+  }, [currentlyPlaying?.duration, currentlyPlaying?.formattedProgress, isSeeking, manualSeekPercent, pendingSeekPercent]);
 
   useEffect(() => {
     if (window.electronAPI && window.electronAPI.onRecentlyPlayedUpdated) {
@@ -70,16 +224,15 @@ const NowPlaying = () => {
   }, []);
 
   useEffect(() => {
-    // Listen for queue updates from the main process
     if (window.electronAPI && window.electronAPI.onQueueUpdated) {
-      const handleQueueUpdate = (event, data) => {
+      const handleQueueUpdate = (event, data) => { /*
         console.log('onQueueUpdated received data:', {
           duration: data.nowPlaying?.duration,
           progress: data.nowPlaying?.progress,
           formattedDuration: data.nowPlaying?.formattedDuration,
           formattedProgress: data.nowPlaying?.formattedProgress,
           progressPercent: data.nowPlaying?.progressPercent,
-        });
+        }); */
         if (data.nowPlaying && data.nowPlaying.title) {
           setCurrentlyPlaying(data.nowPlaying);
           if (typeof data.nowPlaying.isPlaying === 'boolean') {
@@ -108,12 +261,9 @@ const NowPlaying = () => {
           setRepeatMode(incomingRepeatMode);
         }
 
-        if (data.queue) {
-          // Filter out songs after delimiter
-          const delimiterIndex = data.queue.findIndex(song => song.uri === 'spotify:delimiter');
-          const filteredQueue = delimiterIndex >= 0 ? data.queue.slice(0, delimiterIndex) : data.queue;
-          setQueue(filteredQueue);
-        }
+        const delimiterIndex = data.queue.findIndex(song => song.uri === 'spotify:delimiter');
+        const filteredQueue = delimiterIndex >= 0 ? data.queue.slice(0, delimiterIndex) : data.queue;
+        setQueue(filteredQueue);
       };
 
       window.electronAPI.onQueueUpdated(handleQueueUpdate);
@@ -143,6 +293,7 @@ const NowPlaying = () => {
           clearTimeout(manualChangeTimeout.current);
           manualChangeTimeout.current = null;
         }
+        clearManualSeekHold();
         if (manualControlTimeout.current) {
           if (manualControlTimeout.current.shuffle?.timeout) {
             clearTimeout(manualControlTimeout.current.shuffle.timeout);
@@ -188,9 +339,7 @@ const NowPlaying = () => {
       return;
     }
 
-    // Treat any non-zero UI state (1 or smart 2) as "on" to keep toggling binary
     const normalizedCurrent = shuffleMode === 0 ? 0 : 1;
-    // Flip between 0->1 or 1->0; smart mode is only displayed and never emitted
     const nextState = normalizedCurrent === 1 ? 0 : 1;
 
     setShuffleMode(nextState);
@@ -291,7 +440,6 @@ const NowPlaying = () => {
     }, 500);
   }, []);
 
-  // Custom renderer for queue items
   const getImageUrl = (uri) => {
     if (uri && uri.startsWith('spotify:image:')) {
       return `https://i.scdn.co/image/${uri.split(':').pop()}`;
@@ -348,7 +496,7 @@ const NowPlaying = () => {
 
   const renderQueueItem = (song, index) => {
     if (!song) return null;
-    
+
     const albumCoverUrl = getImageUrl(song.album_cover);
 
     return (
@@ -421,25 +569,22 @@ const NowPlaying = () => {
   }, []);
 
   const handleViewQueue = () => setViewMode('queue');
-   
+
   const handleViewHistory = () => {
     console.log("Switching to History view");
     setViewMode('history');
   };
 
   useEffect(() => {
-      if (window.electronAPI?.getRecentlyPlayed && viewMode === 'history') {
-        // console.log("Requesting recently played tracks due to viewMode or currentlyPlaying change...");
-        window.electronAPI.getRecentlyPlayed();
+    if (window.electronAPI?.getRecentlyPlayed && viewMode === 'history') {
+      window.electronAPI.getRecentlyPlayed();
     }
   }, [viewMode]);
 
   useEffect(() => {
     if (window.electronAPI?.getRecentlyPlayed && viewMode === 'history') {
       const currentUri = currentlyPlaying?.uri;
-      // console.log('currentlyPlaying URI effect: currentUri=', currentUri, 'prevUri=', prevCurrentlyPlayingUri.current);
       if (currentUri && currentUri !== prevCurrentlyPlayingUri.current) {
-        // console.log("Requesting recently played tracks due to currentlyPlaying URI change...");
         window.electronAPI.getRecentlyPlayed();
       }
       prevCurrentlyPlayingUri.current = currentUri;
@@ -473,7 +618,7 @@ const NowPlaying = () => {
   }, [recentlyPlayed, currentlyPlaying]);
 
   return (
-     <div className="now-playing">
+    <div className="now-playing">
       <SearchBar
         onPlaylistSelect={handlePlaylistSelect}
         onSettingsClick={() => setIsSettingsOpen(true)}
@@ -481,7 +626,7 @@ const NowPlaying = () => {
       <div className="section-header">
         <h2 className="section-title">Now Playing</h2>
         <div className="playback-controls">
-          <button 
+          <button
             className={shuffleButtonProps.className}
             onClick={handleToggleShuffle}
             aria-label={shuffleButtonProps.ariaLabel}
@@ -489,7 +634,7 @@ const NowPlaying = () => {
             <img src={shuffleIcon} alt="" />
             {shuffleMode === 2 && <span className="smart-shuffle-star">✦</span>}
           </button>
-          <button 
+          <button
             className={repeatButtonClass}
             onClick={handleToggleRepeat}
             aria-label={repeatAriaLabel}
@@ -511,17 +656,32 @@ const NowPlaying = () => {
                 <p className="song-title">{currentlyPlaying.title}</p>
                 <p className="song-artist truncate-text">{currentlyPlaying.artist}</p>
               </div>
-            <div className="song-progress-container">
               <div
-                className="song-progress-bar"
-                style={{ width: `${(currentlyPlaying.progressPercent * 100) || 0}%` }}
-              ></div>
-            </div>
-            <div className="song-time-display">
-              <span className="song-progress-time">{currentlyPlaying.formattedProgress || '00:00'}</span>
-          /
-          <span className="song-duration-time">{currentlyPlaying.formattedDuration || '00:00'}</span>
-            </div>
+                className="song-progress-hitbox"
+                ref={progressHitboxRef}
+                role="slider"
+                aria-label="Seek through the current track"
+                aria-valuemin={0}
+                aria-valuemax={100}
+                aria-valuenow={Math.round(effectiveProgressPercent * 100)}
+                onPointerDown={handleSeekPointerDown}
+                onPointerMove={handleSeekPointerMove}
+                onPointerUp={handleSeekPointerUp}
+                onPointerCancel={handleSeekPointerCancel}
+                onClick={(event) => event.stopPropagation()}
+              >
+                <div className="song-progress-container" ref={progressBarRef}>
+                  <div
+                    className="song-progress-bar"
+                    style={{ width: `${(effectiveProgressPercent * 100) || 0}%` }}
+                  ></div>
+                </div>
+              </div>
+              <div className="song-time-display">
+                <span className="song-progress-time">{displayedProgressLabel}</span>
+                /
+                <span className="song-duration-time">{currentlyPlaying?.formattedDuration || '0:00'}</span>
+              </div>
             </div>
           </div>
         ) : (
