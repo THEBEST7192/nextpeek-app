@@ -28,7 +28,25 @@ jobs:
           npm run make
 
       - name: Upload build artifacts
+        if: runner.os != 'Windows'
         uses: actions/upload-artifact@v4
         with:
           name: ${{ runner.os }}-build
           path: out/make
+
+      - name: Upload Windows installer
+        if: runner.os == 'Windows'
+        uses: actions/upload-artifact@v4
+        with:
+          name: Windows-installer
+          path: out/make/squirrel.windows/x64/**
+          if-no-files-found: error
+
+      - name: Upload Windows portable executables
+        if: runner.os == 'Windows'
+        uses: actions/upload-artifact@v4
+        with:
+          name: Windows-portable
+          path: |
+            out/*win32-x64/**
+          if-no-files-found: error

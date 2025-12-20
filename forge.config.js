@@ -5,12 +5,14 @@ module.exports = {
   packagerConfig: {
     asar: true,
     icon: 'src/assets/logo/logo',
+    executableName: 'NextPeek',
   },
   rebuildConfig: {},
   makers: [
     {
       name: '@electron-forge/maker-squirrel',
       config: {
+        name: 'NextPeek',
         setupIcon: './src/assets/logo/logo.ico'
       },
     },
@@ -20,11 +22,19 @@ module.exports = {
     },
     {
       name: '@electron-forge/maker-deb',
-      config: {},
+      config: {
+        options: {
+          bin: 'NextPeek'
+        }
+      },
     },
     {
       name: '@electron-forge/maker-rpm',
-      config: {},
+      config: {
+        options: {
+          bin: 'NextPeek'
+        }
+      },
     },
   ],
   plugins: [

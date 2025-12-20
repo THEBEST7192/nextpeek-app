@@ -1,8 +1,8 @@
 {
   "name": "nextpeek-app",
-  "productName": "nextpeek-app",
-  "version": "1.0.0",
-  "description": "My Electron application description",
+  "productName": "NextPeek",
+  "version": "1.5.0",
+  "description": "NextPeek gives you a clean, always-on window into your live Spotify queue, right on your desktop.",
   "main": ".vite/build/main.js",
   "scripts": {
     "start": "electron-forge start",
