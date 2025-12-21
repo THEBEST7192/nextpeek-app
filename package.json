@@ -1,7 +1,7 @@
 {
   "name": "nextpeek-app",
   "productName": "NextPeek",
-  "version": "1.5.0",
+  "version": "1.5.1",
   "description": "NextPeek gives you a clean, always-on window into your live Spotify queue, right on your desktop.",
   "main": ".vite/build/main.js",
   "scripts": {
