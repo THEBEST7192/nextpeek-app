@@ -5,11 +5,19 @@ on:
 
 jobs:
   build:
-    name: Build for ${{ matrix.os }}
+    name: Build for ${{ matrix.os }} (${{ matrix.arch }})
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        include:
+          - os: ubuntu-latest
+            arch: x64
+          - os: windows-latest
+            arch: x64
+          - os: macos-latest
+            arch: arm64
+          - os: macos-15-intel
+            arch: x64
 
     steps:
       - name: Checkout repository
@@ -25,20 +33,37 @@ jobs:
 
       - name: Build and package app with Electron Forge
         run: |
-          npm run make
+          npm run make -- --arch ${{ matrix.arch }}
 
-      - name: Upload build artifacts
-        if: runner.os != 'Windows'
+      - name: Upload Linux deb
+        if: runner.os == 'Linux'
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ runner.os }}-build
-          path: out/make
+          name: Linux-deb-${{ matrix.arch }}
+          path: out/make/deb/x64/*.deb
+          if-no-files-found: error
+
+      - name: Upload Linux rpm
+        if: runner.os == 'Linux'
+        uses: actions/upload-artifact@v4
+        with:
+          name: Linux-rpm-${{ matrix.arch }}
+          path: out/make/rpm/x64/*.rpm
+          if-no-files-found: error
+
+      - name: Upload macOS zip
+        if: runner.os == 'macOS'
+        uses: actions/upload-artifact@v4
+        with:
+          name: macOS-zip-${{ matrix.arch }}
+          path: out/make/zip/darwin/${{ matrix.arch }}/*.zip
+          if-no-files-found: error
 
       - name: Upload Windows installer
         if: runner.os == 'Windows'
         uses: actions/upload-artifact@v4
         with:
-          name: Windows-installer
+          name: Windows-installer-${{ matrix.arch }}
           path: out/make/squirrel.windows/x64/**
           if-no-files-found: error
 
@@ -46,7 +71,7 @@ jobs:
         if: runner.os == 'Windows'
         uses: actions/upload-artifact@v4
         with:
-          name: Windows-portable
+          name: Windows-portable-${{ matrix.arch }}
           path: |
             out/*win32-x64/**
           if-no-files-found: error
