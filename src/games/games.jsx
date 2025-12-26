@@ -181,8 +181,10 @@ I64 winnings = 0;
   const source = header + String(slotsGameCode);
 
   // Debug: log the generated source to see what's being passed to HolyC
-  console.log('Generated HolyC source:');
-  console.log(source);
+  if (import.meta.env.DEV) {
+    console.log('Generated HolyC source:');
+    console.log(source);
+  }
 
   return source;
 };

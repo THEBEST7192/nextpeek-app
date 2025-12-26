@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, screen, shell, dialog } from 'electron';
+import { app, BrowserWindow, ipcMain, screen, shell, dialog, Menu } from 'electron';
 import path from 'node:path';
 import started from 'electron-squirrel-startup';
 import crypto from 'node:crypto';
@@ -146,6 +146,8 @@ const startQueueListener = () => {
   if (queueServer) {
     setQueueWindow(mainWindow);
     mainWindow?.webContents.send('queue-server-started');
+    // Trigger an immediate fetch when re-attaching
+    getRecentlyPlayed();
     return;
   }
   
@@ -155,7 +157,12 @@ const startQueueListener = () => {
   // Notify the renderer that the queue server has started
   mainWindow?.webContents.send('queue-server-started');
   
-  console.log('Queue server started on port 7192');
+  // Trigger an immediate fetch on startup
+  getRecentlyPlayed();
+  
+  if (!app.isPackaged) {
+    console.log('Queue server started on port 7192');
+  }
 };
 const TRIGGER_ZONE_WIDTH = 5; // 5px trigger zone on screen edges
 const ANIMATION_DURATION = 300; // ms for slide animation
@@ -268,7 +275,9 @@ const createWindow = (options = {}) => {
   }
 
   // Open the DevTools.
-  mainWindow.webContents.openDevTools();
+  if (!app.isPackaged) {
+    mainWindow.webContents.openDevTools();
+  }
 
   // Always keep mouse events enabled so the window remains interactive
   mainWindow.setIgnoreMouseEvents(false);
@@ -277,8 +286,10 @@ const createWindow = (options = {}) => {
   mainWindow.show();
 
   mainWindow.on('closed', () => {
-    console.log('Main window closed. Clearing all intervals and timeouts.');
-    closePong();
+      if (!app.isPackaged) {
+        console.log('Main window closed. Clearing all intervals and timeouts.');
+      }
+      closePong();
     if (mouseTrackingInterval) {
       clearInterval(mouseTrackingInterval);
       mouseTrackingInterval = null;
@@ -388,7 +399,7 @@ const startMouseTracking = () => {
     const shouldTriggerRight = !isPinned && currentSide === 'right' && isInRightTrigger;
                             
     // Debug output for trigger zones
-    if (shouldTriggerLeft || shouldTriggerRight) {
+    if (!app.isPackaged && (shouldTriggerLeft || shouldTriggerRight)) {
       console.log(`Cursor in trigger zone for current side: side=${currentSide}, Left=${isInLeftTrigger}, Right=${isInRightTrigger}, isPinned=${isPinned}`);
     }
 
@@ -400,14 +411,18 @@ const startMouseTracking = () => {
 
     if (shouldTriggerLeft && !isSidebarVisible && !isAnimating && !showDelayTimeout) {
           // Left edge - show sidebar with delay
-          console.log('Showing sidebar on LEFT side');
+          if (!app.isPackaged) {
+            console.log('Showing sidebar on LEFT side');
+          }
           showDelayTimeout = setTimeout(() => {
             showSidebar('left');
             showDelayTimeout = null;
           }, SHOW_DELAY);
         } else if (shouldTriggerRight && !isSidebarVisible && !isAnimating && !showDelayTimeout) {
           // Right edge - show sidebar with delay
-          console.log('Showing sidebar on RIGHT side');
+          if (!app.isPackaged) {
+            console.log('Showing sidebar on RIGHT side');
+          }
           showDelayTimeout = setTimeout(() => {
             showSidebar('right');
             showDelayTimeout = null;
@@ -453,7 +468,9 @@ const showSidebar = (side = 'left') => {
   if (currentTime - lastShowTime < SHOW_COOLDOWN) return;
   lastShowTime = currentTime;
   
-  console.log(`showSidebar called with side: ${side}`);
+  if (!app.isPackaged) {
+    console.log(`showSidebar called with side: ${side}`);
+  }
   // Persist the side so hover triggers only respond to the same edge
   currentSide = side;
 
@@ -476,7 +493,9 @@ const showSidebar = (side = 'left') => {
 
   // Set position based on side
   const targetX = side === 'left' ? workArea.x : workArea.x + workArea.width - targetWidth;
-  console.log(`Setting targetX for ${side} side: ${targetX}`);
+  if (!app.isPackaged) {
+    console.log(`Setting targetX for ${side} side: ${targetX}`);
+  }
 
   // Enable mouse events for the sidebar
   mainWindow.setIgnoreMouseEvents(false);
@@ -492,7 +511,9 @@ const showSidebar = (side = 'left') => {
   // Set initial position off-screen but within the same display
   // Instead of moving completely off-screen, we'll keep a small portion visible
   const startX = side === 'left' ? workArea.x - targetWidth + 5 : workArea.x + workArea.width - 5;
-  console.log(`Animation starting: side=${side}, startX=${startX}, targetX=${targetX}`);
+  if (!app.isPackaged) {
+    console.log(`Animation starting: side=${side}, startX=${startX}, targetX=${targetX}`);
+  }
   
   // Force window to be visible before animation
   if (!mainWindow.isVisible()) {
@@ -521,7 +542,9 @@ const showSidebar = (side = 'left') => {
     
     const currentX = startX + (xDistance * progress);
     
-    console.log(`Animation step: side=${side}, progress=${progress.toFixed(2)}, currentX=${Math.round(currentX)}`);
+    if (!app.isPackaged) {
+      console.log(`Animation step: side=${side}, progress=${progress.toFixed(2)}, currentX=${Math.round(currentX)}`);
+    }
     
     mainWindow.setBounds({
       x: Math.round(currentX),
@@ -535,7 +558,9 @@ const showSidebar = (side = 'left') => {
     } else {
       isSidebarVisible = true;
       isAnimating = false; // Mark animation as complete
-      console.log(`Animation complete: side=${side}, final position=${Math.round(currentX)}`);
+      if (!app.isPackaged) {
+        console.log(`Animation complete: side=${side}, final position=${Math.round(currentX)}`);
+      }
     }
   };
 
@@ -614,7 +639,9 @@ const togglePin = () => {
       height: workArea.height
     });
     
-    console.log(`Window unpinned and snapped to ${currentSide} edge: (${newX}, ${workArea.y})`);
+    if (!app.isPackaged) {
+      console.log(`Window unpinned and snapped to ${currentSide} edge: (${newX}, ${workArea.y})`);
+    }
     
     // No need to update currentSide as we've already set it above
   }
@@ -646,11 +673,15 @@ const hideSidebar = () => {
   const isOnLeft = Math.abs(windowBounds.x - workArea.x) < 5;
   const isOnRight = Math.abs(windowBounds.x - (workArea.x + workArea.width - targetWidth)) < 5;
   
-  console.log(`Side detection: windowBounds.x=${windowBounds.x}, workArea.x=${workArea.x}, right edge=${workArea.x + workArea.width - targetWidth}`);
-  console.log(`Side detection result: isOnLeft=${isOnLeft}, isOnRight=${isOnRight}`);
+  if (!app.isPackaged) {
+    console.log(`Side detection: windowBounds.x=${windowBounds.x}, workArea.x=${workArea.x}, right edge=${workArea.x + workArea.width - targetWidth}`);
+    console.log(`Side detection result: isOnLeft=${isOnLeft}, isOnRight=${isOnRight}`);
+  }
 
   if (!isOnLeft && !isOnRight) {
-    console.log('Window not on either edge, canceling hide animation');
+    if (!app.isPackaged) {
+      console.log('Window not on either edge, canceling hide animation');
+    }
     return;
   }
 
@@ -671,7 +702,9 @@ const hideSidebar = () => {
   }
 
   if (hasAdjacentMonitor) {
-    console.log(`Adjacent monitor found on ${isOnLeft ? 'left' : 'right'} edge, canceling hide animation`);
+    if (!app.isPackaged) {
+      console.log(`Adjacent monitor found on ${isOnLeft ? 'left' : 'right'} edge, canceling hide animation`);
+    }
     return;
   }
 
@@ -683,7 +716,9 @@ const hideSidebar = () => {
   // Keep a small portion visible to prevent moving to adjacent monitors
   const targetX = isOnLeft ? workArea.x - targetWidth + 5 : workArea.x + workArea.width - 5;
   
-  console.log(`Hide animation: isOnLeft=${isOnLeft}, isOnRight=${isOnRight}, startX=${startX}, targetX=${targetX}`);
+  if (!app.isPackaged) {
+    console.log(`Hide animation: isOnLeft=${isOnLeft}, isOnRight=${isOnRight}, startX=${startX}, targetX=${targetX}`);
+  }
   
   // Use setTimeout for animation instead of requestAnimationFrame
   isAnimating = true; // Mark animation as in progress
@@ -699,7 +734,9 @@ const hideSidebar = () => {
     
     const currentX = startX + (xDistance * progress);
     
-    console.log(`Hide animation step: progress=${progress.toFixed(2)}, currentX=${Math.round(currentX)}`);
+    if (!app.isPackaged) {
+      console.log(`Hide animation step: progress=${progress.toFixed(2)}, currentX=${Math.round(currentX)}`);
+    }
     
     mainWindow.setBounds({
       x: Math.round(currentX),
@@ -713,7 +750,9 @@ const hideSidebar = () => {
     } else {
       isSidebarVisible = false;
       isAnimating = false; // Mark animation as complete
-      console.log(`Hide animation complete`);
+      if (!app.isPackaged) {
+        console.log(`Hide animation complete`);
+      }
       mainWindow.hide();
     }
   };
@@ -741,13 +780,19 @@ const initializeWindowSize = () => {
     height: workArea.height
   });
   
-  console.log(`Window initialized: side=${currentSide}, position=(${targetX}, ${workArea.y}), size=${targetWidth}x${workArea.height}`);
+  if (!app.isPackaged) {
+    console.log(`Window initialized: side=${currentSide}, position=(${targetX}, ${workArea.y}), size=${targetWidth}x${workArea.height}`);
+  }
 };
 
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
 app.whenReady().then(async () => {
+  if (app.isPackaged) {
+    Menu.setApplicationMenu(null);
+  }
+
   settingsFilePath = path.join(app.getPath('userData'), 'settings.json');
   await loadSettings();
 
@@ -929,7 +974,9 @@ ipcMain.on('minimize-window', () => {
 
 ipcMain.on('toggle-pin', () => {
   togglePin();
-  console.log(`Window pin ${isPinned ? 'enabled' : 'disabled'}`);
+  if (!app.isPackaged) {
+    console.log(`Window pin ${isPinned ? 'enabled' : 'disabled'}`);
+  }
 });
 
 // These would be connected to your actual music player functionality
@@ -1007,7 +1054,9 @@ ipcMain.on('snap-window', () => {
         currentSide = 'right';
       }
     }
-    console.log('Window snapped');
+    if (!app.isPackaged) {
+      console.log('Window snapped');
+    }
   }
 });
 

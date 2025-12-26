@@ -223,14 +223,16 @@ const NowPlaying = () => {
 
   useEffect(() => {
     if (window.electronAPI && window.electronAPI.onQueueUpdated) {
-      const handleQueueUpdate = (event, data) => { /*
-        console.log('onQueueUpdated received data:', {
-          duration: data.nowPlaying?.duration,
-          progress: data.nowPlaying?.progress,
-          formattedDuration: data.nowPlaying?.formattedDuration,
-          formattedProgress: data.nowPlaying?.formattedProgress,
-          progressPercent: data.nowPlaying?.progressPercent,
-        }); */
+      const handleQueueUpdate = (event, data) => {
+        if (import.meta.env.DEV) {
+          console.log('onQueueUpdated received data:', {
+            duration: data.nowPlaying?.duration,
+            progress: data.nowPlaying?.progress,
+            formattedDuration: data.nowPlaying?.formattedDuration,
+            formattedProgress: data.nowPlaying?.formattedProgress,
+            progressPercent: data.nowPlaying?.progressPercent,
+          });
+        }
         if (data.nowPlaying && data.nowPlaying.title) {
           setCurrentlyPlaying(data.nowPlaying);
           if (typeof data.nowPlaying.isPlaying === 'boolean') {
@@ -525,11 +527,15 @@ const NowPlaying = () => {
   };
 
   const handlePlaylistSelect = async (playlist) => {
-    console.log('Selected playlist:', playlist);
+    if (import.meta.env.DEV) {
+      console.log('Selected playlist:', playlist);
+    }
     try {
       if (window.electronAPI && window.electronAPI.playPlaylist) {
         await window.electronAPI.playPlaylist(playlist.uri);
-        console.log('Playing playlist:', playlist.name);
+        if (import.meta.env.DEV) {
+          console.log('Playing playlist:', playlist.name);
+        }
       } else {
         console.error('playPlaylist API not available');
       }
@@ -571,7 +577,9 @@ const NowPlaying = () => {
   const handleViewQueue = () => setViewMode('queue');
 
   const handleViewHistory = () => {
-    console.log("Switching to History view");
+    if (import.meta.env.DEV) {
+      console.log("Switching to History view");
+    }
     setViewMode('history');
   };
 

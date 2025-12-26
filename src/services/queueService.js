@@ -79,7 +79,9 @@ export function startQueueServer(mainWindow) {
             repeatMode: normalizedRepeatMode,
             shuffle: normalizedShuffle,
           };
-          console.log('Queue updated:', currentQueue);
+          if (import.meta.env.DEV) {
+            console.log('Queue updated:', currentQueue);
+          }
           
           if (data.history) {
             recentlyPlayedTracks = data.history;
@@ -147,7 +149,9 @@ export function startQueueServer(mainWindow) {
         try {
           const data = JSON.parse(body);
           userPlaylists = data.playlists;
-          console.log('Playlists received:', userPlaylists.length);
+          if (import.meta.env.DEV) {
+            console.log('Playlists received:', userPlaylists.length);
+          }
           
           // Respond to all pending requests
           pendingPlaylistRequests.forEach(({ query, res: pendingRes, timeout }) => {
@@ -184,7 +188,9 @@ export function startQueueServer(mainWindow) {
         try {
           const data = JSON.parse(body);
           recentlyPlayedTracks = data.recentlyPlayed;
-          console.log('Recently played tracks received:', recentlyPlayedTracks.length);
+          if (import.meta.env.DEV) {
+            console.log('Recently played tracks received:', recentlyPlayedTracks.length);
+          }
           
           if (queueUpdateCallback) queueUpdateCallback('history', recentlyPlayedTracks);
           
@@ -206,7 +212,9 @@ export function startQueueServer(mainWindow) {
 
   // Start server on port 7192
   server.listen(7192, '127.0.0.1', () => {
+    if (import.meta.env.DEV) {
     console.log('Queue server running at http://127.0.0.1:7192/');
+  }
   });
 
   return server;
@@ -215,7 +223,9 @@ export function startQueueServer(mainWindow) {
 // Send command to Spotify
 export function sendCommand(action, data = null) {
   pendingCommand = data ? { action, data } : { action };
-  console.log('Command set:', action, data);
+  if (import.meta.env.DEV) {
+    console.log('Command set:', action, data);
+  }
   return true;
 }
 
@@ -230,6 +240,8 @@ export function getRecentlyPlayedTracks() {
 
 export function getRecentlyPlayed() {
   pendingCommand = { action: 'getRecentlyPlayed' };
-  console.log('Command set: getRecentlyPlayed');
+  if (import.meta.env.DEV) {
+    console.log('Command set: getRecentlyPlayed');
+  }
   return true;
 }

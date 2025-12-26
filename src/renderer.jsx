@@ -468,7 +468,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // Handle queue updates
     if (window.electronAPI.onQueueUpdated) {
       window.electronAPI.onQueueUpdated((event, queueData) => {
-        console.log('Queue updated:', queueData);
+        if (import.meta.env.DEV) {
+          console.log('Queue updated:', queueData);
+        }
         // You can update the UI with the queue data here
       });
     }
