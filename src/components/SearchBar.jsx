@@ -74,42 +74,43 @@ const SearchBar = ({ onPlaylistSelect, onSettingsClick }) => {
   return (
     <div className="search-container">
       <div className="search-input-wrapper">
-        <input
-          type="text"
-          placeholder="Search playlists..."
-          value={searchTerm}
-          onChange={handleSearch}
-          onFocus={() => setIsFocused(true)}
-          onBlur={() => setTimeout(() => setIsFocused(false), 200)} // Small delay to allow click on results
-          className="search-input"
-        />
-        <button
-          type="button"
-          className="search-settings-button home-button"
-          onMouseDown={(event) => event.preventDefault()}
-          onClick={() => {
-            if (window.electronAPI?.goHome) {
-              window.electronAPI.goHome();
-            }
-          }}
-          title="Back to Home"
-          aria-label="Back to Home"
-        >
-          <img src={sidebarIcon} alt="" aria-hidden="true"/>
-        </button>
-        <button
-          type="button"
-          className="search-settings-button"
-          onMouseDown={(event) => event.preventDefault()}
-          onClick={() => {
-            if (onSettingsClick) {
-              onSettingsClick();
-            }
-          }}
-          aria-label="Open settings"
-        >
-          <img src={settingsIcon} alt="" aria-hidden="true" />
-        </button>
+        <div className="search-input-inner">
+          <input
+            type="text"
+            placeholder="Search playlists..."
+            value={searchTerm}
+            onChange={handleSearch}
+            onFocus={() => setIsFocused(true)}
+            onBlur={() => setTimeout(() => setIsFocused(false), 200)}
+            className="search-input"
+          />
+          <div className="search-actions">
+            <button
+              type="button"
+              className="search-home-button control-button-base"
+              onMouseDown={(event) => event.preventDefault()}
+              onClick={() => {
+                if (window.electronAPI?.goHome) {
+                  window.electronAPI.goHome();
+                }
+              }}
+              title="Back to Home"
+              aria-label="Back to Home"
+            >
+              <img src={sidebarIcon} alt="" aria-hidden="true"/>
+            </button>
+            <button
+              type="button"
+              className="search-settings-button control-button-base"
+              onMouseDown={(event) => event.preventDefault()}
+              onClick={onSettingsClick}
+              title="Settings"
+              aria-label="Settings"
+            >
+              <img src={settingsIcon} alt="" aria-hidden="true"/>
+            </button>
+          </div>
+        </div>
       </div>
       {isFocused && (isLoading || searchResults.length > 0 || (searchTerm.trim() !== '' && !isLoading)) && (
         <div className="search-results">

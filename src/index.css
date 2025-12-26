@@ -1,24 +1,25 @@
-body {
+html, body {
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  height: 100%;
   font-family:
     -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial,
     sans-serif;
-  margin: 0;
-  padding: 0;
   background-color: rgba(18, 18, 18, 0.8);
   color: #ffffff;
-  overflow: hidden;
-  height: 100%;
 }
 
 #content {
-  height: calc(100% - 32px); /* Titlebar height is 32px */
+  height: 100%;
   overflow-y: auto;
   overflow-x: hidden;
+  box-sizing: border-box;
+  max-width: 38rem;
+  margin: auto;
+  padding: 71px 10px 10px;
 }
 
-#root {
-  min-height: 100%;
-}
 
 body[data-theme='transparent'] #titlebar {
   background-color: rgba(0, 0, 0, 0.56);
@@ -48,12 +49,15 @@ body.has-custom-background {
 }
 
 /* Custom Image Text Color Styles - White Text */
-body[data-theme='customImage'][data-custom-image-text-color='white'] #titlebar img {
+body[data-theme='customImage'][data-custom-image-text-color='white'] #titlebar img,
+body[data-theme='customImage'][data-custom-image-text-color='white'] .search-home-button img,
+body[data-theme='customImage'][data-custom-image-text-color='white'] .search-settings-button img {
   filter: invert(100%);
 }
 
 body[data-theme='customImage'][data-custom-image-text-color='white'] .song-title,
-body[data-theme='customImage'][data-custom-image-text-color='white'] .song-artist {
+body[data-theme='customImage'][data-custom-image-text-color='white'] .song-artist,
+body[data-theme='customImage'][data-custom-image-text-color='white'] .song-time-display {
   color: rgba(255, 255, 255, 1);
   -webkit-text-fill-color: rgba(255, 255, 255, 1);
 }
@@ -65,12 +69,15 @@ body[data-theme='customImage'][data-custom-image-text-color='white'] .queue-empt
 }
 
 /* Custom Image Text Color Styles - Black Text */
-body[data-theme='customImage'][data-custom-image-text-color='black'] #titlebar img {
+body[data-theme='customImage'][data-custom-image-text-color='black'] #titlebar img,
+body[data-theme='customImage'][data-custom-image-text-color='black'] .search-home-button img,
+body[data-theme='customImage'][data-custom-image-text-color='black'] .search-settings-button img {
   filter: invert(0%);
 }
 
 body[data-theme='customImage'][data-custom-image-text-color='black'] .song-title,
-body[data-theme='customImage'][data-custom-image-text-color='black'] .song-artist {
+body[data-theme='customImage'][data-custom-image-text-color='black'] .song-artist,
+body[data-theme='customImage'][data-custom-image-text-color='black'] .song-time-display {
   color: rgba(0, 0, 0, 0.85);
   -webkit-text-fill-color: rgba(0, 0, 0, 0.85);
 }
@@ -241,7 +248,6 @@ body[data-theme='straightAlly']::before {
 
 body[data-theme='straightAlly'] #titlebar,
 body[data-theme='straightAlly'] #content {
-  position: relative;
   z-index: 1;
 }
 
@@ -269,7 +275,8 @@ body[data-theme='straightAlly'] h1,
 body[data-theme='straightAlly'] h2,
 body[data-theme='straightAlly'] h3,
 body[data-theme='straightAlly'] p,
-body[data-theme='straightAlly'] span {
+body[data-theme='straightAlly'] span,
+body[data-theme='straightAlly'] .song-time-display {
   background: linear-gradient(90deg, 
     #e40303 0%, 
     #ff8c00 16.67%, 
@@ -305,11 +312,23 @@ body[data-theme='trans'] #titlebar img,
 body[data-theme='gay'] #titlebar img,
 body[data-theme='lesbian'] #titlebar img,
 body[data-theme='aroace'] #titlebar img,
-body[data-theme='asexual'] #titlebar img {
+body[data-theme='asexual'] #titlebar img,
+body[data-theme='trans'] .search-home-button img,
+body[data-theme='gay'] .search-home-button img,
+body[data-theme='lesbian'] .search-home-button img,
+body[data-theme='aroace'] .search-home-button img,
+body[data-theme='asexual'] .search-home-button img,
+body[data-theme='trans'] .search-settings-button img,
+body[data-theme='gay'] .search-settings-button img,
+body[data-theme='lesbian'] .search-settings-button img,
+body[data-theme='aroace'] .search-settings-button img,
+body[data-theme='asexual'] .search-settings-button img {
   filter: invert(0%);
 }
 
-body[data-theme='straightAlly'] #titlebar img {
+body[data-theme='straightAlly'] #titlebar img,
+body[data-theme='straightAlly'] .search-home-button img,
+body[data-theme='straightAlly'] .search-settings-button img {
   filter: invert(100%);
 }
 
@@ -584,6 +603,14 @@ body[data-theme='straightAlly'] .song-title {
   color: #000000;
 }
 
+body[data-theme='trans'] .song-time-display,
+body[data-theme='gay'] .song-time-display,
+body[data-theme='lesbian'] .song-time-display,
+body[data-theme='asexual'] .song-time-display,
+body[data-theme='aroace'] .song-time-display {
+  color: rgba(0, 0, 0, 0.7);
+}
+
 body[data-theme='trans'] .song-artist,
 body[data-theme='gay'] .song-artist,
 body[data-theme='lesbian'] .song-artist,
@@ -797,7 +824,7 @@ body[data-theme='straightAlly'] .settings-theme-option__description {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    color: var(--accent-color);
+    color: #1ed760;
     text-shadow: 0 0 2px rgba(0, 0, 0, 0.5);
     pointer-events: none;
   }
@@ -1043,15 +1070,7 @@ body[data-theme='straightAlly'] .settings-theme-option__description {
   }
 }
 
-#content {
-  max-width: 38rem;
-  margin: auto;
-  padding: 71px 10px 10px;
-}
 
-body[data-theme='straightAlly'] #content {
-  padding: 10px 10px 10px;
-}
 
 #settings-bar {
   display: flex;
@@ -1068,7 +1087,7 @@ body[data-theme='straightAlly'] #content {
 
 .queue-list {
   display: flex;
-  flex-direction: column;; 
+  flex-direction: column;
 }
 
 /* Section Headers (Space between Searchbar and Queue) */
@@ -1119,6 +1138,66 @@ body[data-theme='straightAlly'] #content {
   opacity: 1;
 }
 
+/* Base control button style for hover/active effects */
+.control-button-base {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  position: relative;
+  z-index: 1;
+  transition: transform 0.2s ease;
+  -webkit-app-region: no-drag;
+}
+
+.control-button-base::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: transparent;
+  transition: background-color 0.2s ease, opacity 0.2s ease;
+  z-index: -1;
+}
+
+.control-button-base:hover::before {
+  background-color: rgba(255, 255, 255, 0.08);
+}
+
+.control-button-base:active {
+  transform: scale(0.95);
+}
+
+.control-button-base:active::before {
+  background-color: rgba(255, 255, 255, 0.14);
+}
+
+/* Theme-specific overrides for control buttons */
+body[data-theme='trans'] .control-button-base:hover::before,
+body[data-theme='gay'] .control-button-base:hover::before,
+body[data-theme='lesbian'] .control-button-base:hover::before,
+body[data-theme='asexual'] .control-button-base:hover::before,
+body[data-theme='aroace'] .control-button-base:hover::before,
+body[data-theme='straightAlly'] .control-button-base:hover::before {
+  background-color: rgba(0, 0, 0, 0.08);
+}
+
+body[data-theme='trans'] .control-button-base:active::before,
+body[data-theme='gay'] .control-button-base:active::before,
+body[data-theme='lesbian'] .control-button-base:active::before,
+body[data-theme='asexual'] .control-button-base:active::before,
+body[data-theme='aroace'] .control-button-base:active::before,
+body[data-theme='straightAlly'] .control-button-base:active::before {
+  background-color: rgba(0, 0, 0, 0.14);
+}
+
+/* Original control button styles */
 .control-button {
   background: none;
   border: none;
@@ -1326,7 +1405,6 @@ body[data-theme='customImage'][data-custom-image-text-color='white'] .control-bu
   width: 100%;
   box-sizing: border-box;
   min-height: 60px;
-  height: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1729,10 +1807,6 @@ body[data-theme='straightAlly'] .song-progress-bar {
   gap: 4px;
   font-size: 15px;
   color: rgba(255, 255, 255, 0.7);
-}
-
-body[data-custom-image-text-color='black'] .song-time-display {
-  color: rgba(0, 0, 0, 0.7);
 }
 
 .song-progress-time {
