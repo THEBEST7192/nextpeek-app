@@ -5,7 +5,19 @@ body {
   margin: 0;
   padding: 0;
   background-color: rgba(18, 18, 18, 0.8);
+  color: #ffffff;
+  overflow: hidden;
+  height: 100%;
+}
+
+#content {
+  height: calc(100% - 32px); /* Titlebar height is 32px */
   overflow-y: auto;
+  overflow-x: hidden;
+}
+
+#root {
+  min-height: 100%;
 }
 
 body[data-theme='transparent'] #titlebar {
@@ -20,7 +32,7 @@ body[data-theme='solid'] {
 }
 
 body[data-theme='transparent'] {
-  background-color: rgba(18, 18, 18, 0.7);
+  background-color: rgba(18, 18, 18, 0.45);
 }
 
 body[data-theme='customImage'] {
@@ -451,21 +463,28 @@ body[data-theme='straightAlly'] #login-screen p {
 
 body[data-theme='trans'] #login-settings-button img,
 body[data-theme='trans'] #login-casino-button img,
+body[data-theme='trans'] #login-pong-button img,
 body[data-theme='gay'] #login-settings-button img,
 body[data-theme='gay'] #login-casino-button img,
+body[data-theme='gay'] #login-pong-button img,
 body[data-theme='aroace'] #login-settings-button img,
 body[data-theme='aroace'] #login-casino-button img,
+body[data-theme='aroace'] #login-pong-button img,
 body[data-theme='lesbian'] #login-settings-button img,
 body[data-theme='lesbian'] #login-casino-button img,
+body[data-theme='lesbian'] #login-pong-button img,
 body[data-theme='asexual'] #login-settings-button img,
 body[data-theme='asexual'] #login-casino-button img,
+body[data-theme='asexual'] #login-pong-button img,
 body[data-theme='straightAlly'] #login-settings-button img,
-body[data-theme='straightAlly'] #login-casino-button img {
+body[data-theme='straightAlly'] #login-casino-button img,
+body[data-theme='straightAlly'] #login-pong-button img {
   filter: invert(0%);
 }
 
 body[data-theme='straight'] #login-settings-button img,
-body[data-theme='straight'] #login-casino-button img {
+body[data-theme='straight'] #login-casino-button img,
+body[data-theme='straight'] #login-pong-button img {
   filter: invert(0%);
 }
 
@@ -482,6 +501,11 @@ body[data-theme='customImage'][data-custom-image-text-color='black'] #login-scre
   color: #000000;
 }
 
+body[data-theme='customImage'][data-custom-image-text-color='black'] .no-playing-message,
+body[data-theme='customImage'][data-custom-image-text-color='black'] .queue-empty-message {
+  color: rgba(0, 0, 0, 0.72) !important;
+}
+
 body[data-theme='customImage'][data-custom-image-text-color='black'] #login-screen h2 {
   color: rgba(0, 0, 0, 0.72);
 }
@@ -491,7 +515,8 @@ body[data-theme='customImage'][data-custom-image-text-color='black'] #login-scre
 }
 
 body[data-theme='customImage'][data-custom-image-text-color='black'] #login-settings-button img,
-body[data-theme='customImage'][data-custom-image-text-color='black'] #login-casino-button img {
+body[data-theme='customImage'][data-custom-image-text-color='black'] #login-casino-button img,
+body[data-theme='customImage'][data-custom-image-text-color='black'] #login-pong-button img {
   filter: invert(0%);
 }
 
@@ -513,7 +538,8 @@ body[data-theme='customImage'][data-custom-image-text-color='white'] #login-scre
 }
 
 body[data-theme='customImage'][data-custom-image-text-color='white'] #login-settings-button img,
-body[data-theme='customImage'][data-custom-image-text-color='white'] #login-casino-button img {
+body[data-theme='customImage'][data-custom-image-text-color='white'] #login-casino-button img,
+body[data-theme='customImage'][data-custom-image-text-color='white'] #login-pong-button img {
   filter: invert(100%);
 }
 
@@ -531,7 +557,7 @@ body[data-theme='gay'] .queue-empty-message,
 body[data-theme='lesbian'] .queue-empty-message,
 body[data-theme='asexual'] .queue-empty-message,
 body[data-theme='aroace'] .queue-empty-message {
-  color: rgba(0, 0, 0, 0.72);
+  color: rgba(0, 0, 0, 0.72) !important;
 }
 
 body[data-theme='trans'] .song-art-placeholder,
@@ -1006,6 +1032,11 @@ body[data-theme='straightAlly'] .settings-theme-option__description {
   filter: invert(1);
 }
 
+.icon {
+  width: 22px;
+  height: 22px;
+}
+
 @media (max-width: 100px) {
   #minimize-button {
     display: none;
@@ -1286,7 +1317,8 @@ body[data-theme='customImage'][data-custom-image-text-color='white'] .control-bu
 .queue-empty-message {
   margin: 0px;
   padding: 10px;
-  color: #fff;
+  color: inherit;
+  font-family: inherit;
   background-color: rgba(255, 255, 255, 0.05);
   border-radius: 10px;
   backdrop-filter: blur(10px);
@@ -1294,10 +1326,14 @@ body[data-theme='customImage'][data-custom-image-text-color='white'] .control-bu
   width: 100%;
   box-sizing: border-box;
   min-height: 60px;
+  height: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
   text-align: center;
+  opacity: 0.7;
+  font-size: 14px;
+  font-weight: 500;
 }
 
 .no-playing-message::before,

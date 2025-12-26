@@ -1,12 +1,106 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import ReactDOM from 'react-dom/client';
 import NowPlaying from './components/NowPlaying.jsx';
 import SettingsModal from './components/SettingsModal.jsx';
+import SongDisplay from './components/SongDisplay.jsx';
 import { runSlotsGame, initializeSlotsGame } from './games/games.jsx';
 import playIcon from './assets/icons/play.svg';
 import pauseIcon from './assets/icons/pause.svg';
 import pinIcon from './assets/icons/pin.svg';
 import pinoffIcon from './assets/icons/pinoff.svg';
+
+const getImageUrl = (uri) => {
+  if (uri && uri.startsWith('spotify:image:')) {
+    return `https://i.scdn.co/image/${uri.split(':').pop()}`;
+  }
+  return uri;
+};
+
+const usePongData = (type) => {
+  const [data, setData] = useState({ items: [], nowPlaying: null });
+
+  useEffect(() => {
+    // Fetch initial data
+    if (window.electronAPI?.getInitialPongData) {
+      window.electronAPI.getInitialPongData().then(initial => {
+        if (type === 'ball' && initial.queue?.nowPlaying) {
+          setData(prev => ({ ...prev, nowPlaying: initial.queue.nowPlaying }));
+        } else if (type === 'left' && initial.queue?.queue) {
+          setData(prev => ({ ...prev, items: initial.queue.queue }));
+        } else if (type === 'right' && initial.history) {
+          setData(prev => ({ ...prev, items: initial.history }));
+        }
+      });
+    }
+
+    let removeListener = null;
+
+    if (type === 'ball') {
+      const handler = (event, queueData) => {
+        if (queueData?.nowPlaying) setData(prev => ({ ...prev, nowPlaying: queueData.nowPlaying }));
+      };
+      removeListener = window.electronAPI.onQueueUpdated(handler);
+    } else if (type === 'left') {
+      const handler = (event, queueData) => {
+        if (queueData?.queue) setData(prev => ({ ...prev, items: queueData.queue }));
+      };
+      removeListener = window.electronAPI.onQueueUpdated(handler);
+    } else if (type === 'right') {
+      const handler = (event, historyData) => {
+        if (historyData) setData(prev => ({ ...prev, items: historyData }));
+      };
+      removeListener = window.electronAPI.onRecentlyPlayedUpdated(handler);
+    }
+
+    return () => {
+      if (typeof removeListener === 'function') {
+        removeListener();
+      }
+    };
+  }, [type]);
+
+  return data;
+};
+
+const PongPaddle = ({ type }) => {
+  const { items } = usePongData(type);
+
+  return (
+    <div className="pong-paddle">
+      <div className="pong-paddle-content">
+        {items.length > 0 ? (
+          items.slice(0, 5).map((item, i) => (
+            <SongDisplay key={i} song={item.track || item} />
+          ))
+        ) : (
+          <div className="queue-empty-message">
+            <span>{type === 'left' ? 'Queue Empty' : 'History Empty'}</span>
+            <div className="empty-message-spacer"></div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+const PongBall = () => {
+  const { nowPlaying } = usePongData('ball');
+  const albumArt = nowPlaying ? getImageUrl(nowPlaying.album?.images?.[0]?.url || nowPlaying.album_cover || nowPlaying.albumArt) : null;
+
+  return (
+    <div className="pong-ball">
+      <div className="pong-ball-content">
+        {albumArt ? (
+          <img src={albumArt} alt="Ball" />
+        ) : (
+          <div className="pong-ball-placeholder">
+            {nowPlaying?.title || nowPlaying?.name ? (nowPlaying.title || nowPlaying.name).charAt(0).toUpperCase() : ''}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
 
 document.addEventListener('DOMContentLoaded', () => {
   // Close button
@@ -60,6 +154,44 @@ document.addEventListener('DOMContentLoaded', () => {
       renderLoginSettingsModal();
     }
   };
+
+  const urlParams = new URLSearchParams(window.location.search);
+  const pongMode = urlParams.get('mode');
+
+  if (pongMode) {
+    document.body.classList.add('pong-mode');
+    const pongRoot = document.createElement('div');
+    pongRoot.id = 'pong-root';
+    document.body.appendChild(pongRoot);
+    const root = ReactDOM.createRoot(pongRoot);
+
+    root.render(
+      <React.StrictMode>
+        {pongMode === 'pong-paddle-left' && <PongPaddle type="left" />}
+        {pongMode === 'pong-paddle-right' && <PongPaddle type="right" />}
+        {pongMode === 'pong-ball' && <PongBall />}
+      </React.StrictMode>
+    );
+
+    // Still need to handle theme updates for pong windows
+    if (window.electronAPI?.onThemeChange) {
+      window.electronAPI.onThemeChange((event, payload) => {
+        updateThemeUI(payload);
+      });
+    }
+
+    // Fetch initial theme and data
+    if (window.electronAPI?.getInitialPongData) {
+      window.electronAPI.getInitialPongData().then(initial => {
+        if (initial.theme) {
+          updateThemeUI(initial.theme);
+        }
+      });
+    }
+
+    // Don't run the rest of the app logic if in pong mode
+    return;
+  }
 
   updateThemeUI(currentTheme);
 
@@ -158,12 +290,29 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Casino button
   const loginCasinoBtn = document.getElementById('login-casino-button');
+  const loginPongBtn = document.getElementById('login-pong-button');
   const gameModal = document.getElementById('game-modal');
   const gameCloseBtn = document.getElementById('game-close-btn');
   const gameOutput = document.getElementById('stdout/stderr');
   const spinButton = document.getElementById('spin-button');
   const moneyDisplay = document.getElementById('money-display');
   const betInput = document.getElementById('bet-input');
+
+  if (loginPongBtn) {
+    loginPongBtn.addEventListener('click', () => {
+      window.electronAPI.startPong();
+      // Also trigger the start sequence
+      if (window.electronAPI.startQueueListener) {
+        window.electronAPI.startQueueListener();
+        if (startBtn) {
+          startBtn.disabled = true;
+          if (startBtnTextEl) {
+            startBtnTextEl.textContent = 'Starting...';
+          }
+        }
+      }
+    });
+  }
 
   // Persisted money across spins (and sessions)
   let money = Number(localStorage.getItem('casino_money')) || 120;
@@ -422,5 +571,25 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       });
     }
+  }
+
+  // Handle go-home event
+  if (window.electronAPI?.onGoHome) {
+    window.electronAPI.onGoHome(() => {
+      // Reset the start button state
+      if (startBtn) {
+        startBtn.disabled = false;
+        if (startBtnTextEl) {
+          startBtnTextEl.textContent = 'Start';
+        }
+      }
+      
+      // Show login screen and unmount the app
+      showLoginScreen();
+      
+      if (rootElement) {
+        root.render(null);
+      }
+    });
   }
 });

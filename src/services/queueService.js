@@ -2,6 +2,7 @@
 // Handles queue information from port 7192
 
 import http from 'node:http';
+import { BrowserWindow } from 'electron';
 
 const normalizeRepeatMode = (mode) => {
   const numeric = Number(mode);
@@ -28,6 +29,12 @@ let recentlyPlayedTracks = [];
 
 // Store pending playlist requests
 let pendingPlaylistRequests = [];
+
+let queueUpdateCallback = null;
+
+export function onQueueUpdate(callback) {
+  queueUpdateCallback = callback;
+}
 
 // Create HTTP server to handle queue data
 export function setQueueWindow(mainWindow) {
@@ -74,16 +81,22 @@ export function startQueueServer(mainWindow) {
           };
           console.log('Queue updated:', currentQueue);
           
+          if (data.history) {
+            recentlyPlayedTracks = data.history;
+          }
+
+          if (queueUpdateCallback) {
+            queueUpdateCallback('queue', currentQueue);
+            if (data.history) {
+              queueUpdateCallback('history', data.history);
+            }
+          }
+          
           // Update play state if available
           if (currentQueue.nowPlaying && currentQueue.nowPlaying.isPlaying !== undefined) {
             // Update the main process about external play state changes
             rendererWindow?.webContents.emit('external-play-state-changed', currentQueue.nowPlaying.isPlaying);
-            // Send play state to renderer
-            rendererWindow?.webContents.send('play-state-changed', currentQueue.nowPlaying.isPlaying);
           }
-          
-          // Send the queue data to the renderer process
-          rendererWindow?.webContents.send('queue-updated', currentQueue);
           
           res.writeHead(200, { 'Content-Type': 'application/json' });
           res.end(JSON.stringify({ status: 'success' }));
@@ -173,8 +186,7 @@ export function startQueueServer(mainWindow) {
           recentlyPlayedTracks = data.recentlyPlayed;
           console.log('Recently played tracks received:', recentlyPlayedTracks.length);
           
-          // Send the recently played tracks to the renderer process
-          rendererWindow?.webContents.send('recently-played-updated', recentlyPlayedTracks);
+          if (queueUpdateCallback) queueUpdateCallback('history', recentlyPlayedTracks);
           
           res.writeHead(200, { 'Content-Type': 'application/json' });
           res.end(JSON.stringify({ status: 'success' }));
@@ -210,6 +222,10 @@ export function sendCommand(action, data = null) {
 // Get current queue data
 export function getCurrentQueue() {
   return currentQueue;
+}
+
+export function getRecentlyPlayedTracks() {
+  return recentlyPlayedTracks;
 }
 
 export function getRecentlyPlayed() {

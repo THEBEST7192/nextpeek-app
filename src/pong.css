@@ -1,0 +1,122 @@
+html, body.pong-mode {
+  overflow: hidden !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  background-color: transparent !important;
+  border: none !important;
+}
+
+body.pong-mode #titlebar,
+body.pong-mode #login-screen,
+body.pong-mode #root,
+body.pong-mode #game-modal {
+  display: none !important;
+}
+
+#pong-root {
+  width: 100%;
+  height: 100%;
+}
+
+.pong-paddle, .pong-ball {
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-sizing: border-box;
+  position: absolute;
+  top: 0;
+  left: 0;
+  margin: 0;
+  padding: 0;
+  pointer-events: none !important;
+}
+
+.pong-paddle-content, .pong-ball-content {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  max-height: 100vh;
+  margin: 0;
+  padding: 0;
+  background: rgba(0, 0, 0, 0.4);
+}
+
+.pong-ball img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.pong-ball-placeholder {
+  width: 100%;
+  height: 100%;
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+/* Ensure SongDisplay items inside paddles are compact and don't grow */
+.pong-paddle .song-display, 
+.pong-paddle .song-item {
+  flex-shrink: 0;
+  height: 60px !important; /* Force fixed height */
+  min-height: 60px !important;
+  max-height: 60px !important;
+  overflow: hidden;
+  margin: 0 !important;
+  padding: 5px !important;
+  box-sizing: border-box;
+  color: white !important; /* Ensure text is visible in pong */
+  cursor: default !important;
+  pointer-events: none !important;
+}
+
+.pong-paddle .song-title {
+  color: white !important;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.pong-paddle .song-artist {
+  color: rgba(255, 255, 255, 0.7) !important;
+  font-size: 12px;
+}
+
+.pong-paddle .song-album-art {
+  width: 50px !important;
+  height: 50px !important;
+  border-radius: 4px;
+}
+
+.pong-paddle .song-details {
+  font-size: 0.7rem;
+  overflow: hidden;
+  max-width: 130px; /* Leave space for image and gap */
+}
+
+.pong-paddle .song-title,
+.pong-paddle .song-artist {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin: 0;
+}
+
+.pong-paddle .song-title {
+  font-size: 0.8rem;
+  margin-bottom: 2px;
+}
+
+.pong-paddle .song-artist {
+  font-size: 0.6rem;
+}
+
+html {
+  height: 100%;
+  overflow: hidden;
+}

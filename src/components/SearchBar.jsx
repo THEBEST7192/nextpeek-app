@@ -1,5 +1,6 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import settingsIcon from '../assets/icons/settings.svg';
+import sidebarIcon from '../assets/icons/home.svg';
 import './SearchBar.css';
 
 const SearchBar = ({ onPlaylistSelect, onSettingsClick }) => {
@@ -82,6 +83,20 @@ const SearchBar = ({ onPlaylistSelect, onSettingsClick }) => {
           onBlur={() => setTimeout(() => setIsFocused(false), 200)} // Small delay to allow click on results
           className="search-input"
         />
+        <button
+          type="button"
+          className="search-settings-button home-button"
+          onMouseDown={(event) => event.preventDefault()}
+          onClick={() => {
+            if (window.electronAPI?.goHome) {
+              window.electronAPI.goHome();
+            }
+          }}
+          title="Back to Home"
+          aria-label="Back to Home"
+        >
+          <img src={sidebarIcon} alt="" aria-hidden="true"/>
+        </button>
         <button
           type="button"
           className="search-settings-button"

@@ -6,6 +6,7 @@
     
         
     <link rel="stylesheet" href="./src/index.css">
+    <link rel="stylesheet" href="./src/pong.css">
     <script defer type="module">
       import { holyc_web_run } from "./src/games/holyc/holy.js";
       window.holyc_web_run = holyc_web_run;
@@ -52,11 +53,14 @@
           <span id="spotify-login-text">Start</span>
         </button>
         <div id="login-action-buttons">
+          <button id="login-pong-button" type="button" aria-label="Open pong">
+            <img src="./src/assets/icons/pong.svg" alt="" aria-hidden="true" class="icon" />
+          </button>
           <button id="login-casino-button" type="button" aria-label="Open casino">
-            <img src="./src/assets/icons/casino.svg" alt="" aria-hidden="true" />
+            <img src="./src/assets/icons/casino.svg" alt="" aria-hidden="true" class="icon" />
           </button>
           <button id="login-settings-button" type="button" aria-label="Open settings">
-            <img src="./src/assets/icons/settings.svg" alt="" aria-hidden="true" />
+            <img src="./src/assets/icons/settings.svg" alt="" aria-hidden="true" class="icon" />
           </button>
         </div>
       </div>

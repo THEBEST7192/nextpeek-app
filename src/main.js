@@ -8,7 +8,8 @@ import { promises as fs } from 'node:fs';
 import { pathToFileURL } from 'node:url';
 
 // Import queue service
-import { startQueueServer, sendCommand, getCurrentQueue, setQueueWindow, getRecentlyPlayed } from './services/queueService.js';
+import { startQueueServer, sendCommand, getCurrentQueue, setQueueWindow, getRecentlyPlayed, getRecentlyPlayedTracks, onQueueUpdate } from './services/queueService.js';
+import { initPongService, closePong, relayPongData } from './services/pongService.js';
 
 dotenv.config();
 
@@ -35,6 +36,26 @@ let lastKnownBounds = null;
 let customBackgroundImageBase64 = null;
 let customImageTextColor = 'white'; // 'white' or 'black'
 let settingsFilePath = '';
+
+// Relay data to all windows
+const relayData = (type, data) => {
+  // Relay to main window
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    if (type === 'queue') {
+      mainWindow.webContents.send('queue-updated', data);
+      if (data.nowPlaying && data.nowPlaying.isPlaying !== undefined) {
+        mainWindow.webContents.send('play-state-changed', data.nowPlaying.isPlaying);
+      }
+    } else if (type === 'history') {
+      mainWindow.webContents.send('recently-played-updated', data);
+    }
+  }
+
+  // Relay to pong windows
+  relayPongData(type, data);
+};
+
+onQueueUpdate(relayData);
 
 const THEMES = {
   solid: { transparent: false, backgroundColor: '#121212' },
@@ -233,6 +254,10 @@ const createWindow = (options = {}) => {
     if (queueData) {
       mainWindow.webContents.send('queue-updated', queueData);
     }
+    const historyData = getRecentlyPlayedTracks();
+    if (historyData && historyData.length > 0) {
+      mainWindow.webContents.send('recently-played-updated', historyData);
+    }
   });
 
   // and load the index.html of the app.
@@ -253,6 +278,7 @@ const createWindow = (options = {}) => {
 
   mainWindow.on('closed', () => {
     console.log('Main window closed. Clearing all intervals and timeouts.');
+    closePong();
     if (mouseTrackingInterval) {
       clearInterval(mouseTrackingInterval);
       mouseTrackingInterval = null;
@@ -289,6 +315,7 @@ const applyTheme = async (themeKey, { force = false } = {}) => {
     currentTheme = themeKey;
 
     if (shouldRecreateWindow && mainWindow) {
+      closePong(); // Close pong windows on theme change
       mainWindow.destroy();
       createWindow({
         theme: themeKey,
@@ -726,6 +753,17 @@ app.whenReady().then(async () => {
 
   createWindow({ theme: currentTheme });
 
+  // Initialize Pong Service
+  initPongService({
+    getCurrentTheme: () => currentTheme,
+    getThemePayload,
+    getCurrentQueue,
+    getRecentlyPlayedTracks,
+    viteDevServerUrl: typeof MAIN_WINDOW_VITE_DEV_SERVER_URL !== 'undefined' ? MAIN_WINDOW_VITE_DEV_SERVER_URL : null,
+    viteName: typeof MAIN_WINDOW_VITE_NAME !== 'undefined' ? MAIN_WINDOW_VITE_NAME : null,
+    preloadPath: path.join(__dirname, 'preload.js')
+  });
+
   // Initialize window size and position after creation
   setTimeout(() => {
     initializeWindowSize();
@@ -845,6 +883,14 @@ app.whenReady().then(async () => {
     return normalizedMode;
   });
 
+  ipcMain.handle('go-home', () => {
+    closePong();
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send('go-home');
+    }
+    return true;
+  });
+
   // On OS X it's common to re-create a window in the app when the
   // dock icon is clicked and there are no other windows open.
   app.on('activate', () => {
@@ -868,8 +914,9 @@ app.on('window-all-closed', () => {
   }
 });
 
-// In this file you can include the rest of your app's specific main process
-// code. You can also put them in separate files and import them here.
+app.on('before-quit', () => {
+  closePong();
+});
 
 // Handle IPC events for window controls
 ipcMain.on('close-window', () => {

@@ -11,7 +11,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
   skipNext: () => ipcRenderer.invoke('next-track'),
   togglePin: () => ipcRenderer.send('toggle-pin'),
   snapWindow: () => ipcRenderer.send('snap-window'),
-  onPinStateChange: (callback) => ipcRenderer.on('pin-state-changed', callback),
+  onPinStateChange: (callback) => {
+    ipcRenderer.on('pin-state-changed', callback);
+    return () => ipcRenderer.removeListener('pin-state-changed', callback);
+  },
   removePinStateListener: () => ipcRenderer.removeAllListeners('pin-state-changed'),
   onPlayStateChange: (callback) => {
     ipcRenderer.on('play-state-changed', callback);
@@ -40,8 +43,14 @@ contextBridge.exposeInMainWorld('electronAPI', {
   },
   // Queue service
   startQueueListener: () => ipcRenderer.invoke('start-queue-listener'),
-  onQueueUpdated: (callback) => ipcRenderer.on('queue-updated', callback),
-  onQueueServerStarted: (callback) => ipcRenderer.on('queue-server-started', callback),
+  onQueueUpdated: (callback) => {
+    ipcRenderer.on('queue-updated', callback);
+    return () => ipcRenderer.removeListener('queue-updated', callback);
+  },
+  onQueueServerStarted: (callback) => {
+    ipcRenderer.on('queue-server-started', callback);
+    return () => ipcRenderer.removeListener('queue-server-started', callback);
+  },
   // Playlist playback
   playPlaylist: (playlistUri) => ipcRenderer.invoke('play-playlist', playlistUri),
   // Track playback
@@ -50,6 +59,21 @@ contextBridge.exposeInMainWorld('electronAPI', {
   setShuffleState: (state) => ipcRenderer.invoke('set-shuffle-state', state),
   setRepeatMode: (mode) => ipcRenderer.invoke('set-repeat-mode', mode),
   getRecentlyPlayed: () => ipcRenderer.invoke('get-recently-played'),
-  onRecentlyPlayedUpdated: (callback) => ipcRenderer.on('recently-played-updated', callback),
+  onRecentlyPlayedUpdated: (callback) => {
+    ipcRenderer.on('recently-played-updated', callback);
+    return () => ipcRenderer.removeListener('recently-played-updated', callback);
+  },
   removeRecentlyPlayedListener: () => ipcRenderer.removeAllListeners('recently-played-updated'),
+  // Pong game
+  startPong: () => ipcRenderer.send('start-pong'),
+  onPongState: (callback) => {
+    ipcRenderer.on('pong-state', callback);
+    return () => ipcRenderer.removeListener('pong-state', callback);
+  },
+  getInitialPongData: () => ipcRenderer.invoke('get-initial-pong-data'),
+  goHome: () => ipcRenderer.invoke('go-home'),
+  onGoHome: (callback) => {
+    ipcRenderer.on('go-home', callback);
+    return () => ipcRenderer.removeListener('go-home', callback);
+  },
 });

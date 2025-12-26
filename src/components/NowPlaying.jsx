@@ -209,9 +209,7 @@ const NowPlaying = () => {
     if (window.electronAPI && window.electronAPI.onRecentlyPlayedUpdated) {
       const handleRecentlyPlayedUpdate = (event, data) => {
         // console.log('Received recentlyPlayed songs:', data);
-        if (viewModeRef.current === 'history') {
-          setRecentlyPlayed(data || []);
-        }
+        setRecentlyPlayed(data || []);
       };
       window.electronAPI.onRecentlyPlayedUpdated(handleRecentlyPlayedUpdate);
 
@@ -497,7 +495,9 @@ const NowPlaying = () => {
   const renderQueueItem = (song, index) => {
     if (!song) return null;
 
-    const albumCoverUrl = getImageUrl(song.album_cover);
+    const albumCoverUrl = getImageUrl(song.album?.images?.[0]?.url || song.album_cover || song.albumArt);
+    const title = song.name || song.title || 'Unknown Title';
+    const artist = song.artists ? song.artists.map(a => a.name).join(', ') : (song.artist || 'Unknown Artist');
 
     return (
       <div
@@ -514,10 +514,10 @@ const NowPlaying = () => {
         }}
       >
         <div className="song-item">
-          <SongArt albumCoverUrl={albumCoverUrl} title={song.title} />
+          <SongArt albumCoverUrl={albumCoverUrl} title={title} />
           <div className="song-details">
-            <p className="song-title truncate-text">{song.title}</p>
-            <p className="song-artist">{song.artist}</p>
+            <p className="song-title truncate-text">{title}</p>
+            <p className="song-artist">{artist}</p>
           </div>
         </div>
       </div>
@@ -644,17 +644,19 @@ const NowPlaying = () => {
         </div>
       </div>
       <div className="now-playing-section">
-        {currentlyPlaying && currentlyPlaying.title ? (
+        {currentlyPlaying && (currentlyPlaying.title || currentlyPlaying.name) ? (
           <div className="queue-item" onClick={handleTogglePlayPause}>
             <div className="song-item">
               <SongArt
-                albumCoverUrl={getImageUrl(currentlyPlaying.album_cover)}
-                title={currentlyPlaying.title}
+                albumCoverUrl={getImageUrl(currentlyPlaying.album?.images?.[0]?.url || currentlyPlaying.album_cover || currentlyPlaying.albumArt)}
+                title={currentlyPlaying.title || currentlyPlaying.name}
                 overlayIcon={isPlaying ? pauseIcon : playIcon}
               />
               <div className="song-details">
-                <p className="song-title">{currentlyPlaying.title}</p>
-                <p className="song-artist truncate-text">{currentlyPlaying.artist}</p>
+                <p className="song-title">{currentlyPlaying.title || currentlyPlaying.name}</p>
+                <p className="song-artist truncate-text">
+                  {currentlyPlaying.artists ? currentlyPlaying.artists.map(a => a.name).join(', ') : (currentlyPlaying.artist || 'Unknown Artist')}
+                </p>
               </div>
               <div
                 className="song-progress-hitbox"
