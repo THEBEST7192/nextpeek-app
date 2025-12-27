@@ -4,6 +4,17 @@
 
 (async function QueueBridge() {
   let lastKnownContextUri = null;
+  let localHistory = [];
+  try {
+    const storedHistory = localStorage.getItem('nextpeek_history');
+    if (storedHistory) {
+      localHistory = JSON.parse(storedHistory);
+    }
+  } catch (e) {
+    console.error('Failed to load history from localStorage:', e);
+  }
+  let lastTrackUri = null;
+  let lastNowPlaying = null;
 
   const updateKnownContext = (contextUri) => {
     if (contextUri && !contextUri.startsWith('spotify:track:')) {
@@ -17,16 +28,28 @@
 
   async function updateBackend() {
     try {
-      const internalQueue = Spicetify.Platform?.PlayerAPI?._queue?._queue;
       const nextTracks = Spicetify.Queue?.nextTracks || [];
-      const prevTracks = internalQueue?.prevTracks || [];
 
       const current = Spicetify.Player.data?.item?.metadata;
+      const currentUri = Spicetify.Player.data?.item?.uri;
       const currentContextUri = Spicetify.Queue?.contextUri
         || Spicetify.Player.data?.context_uri
         || Spicetify.Player.data?.item?.metadata?.context_uri;
 
       updateKnownContext(currentContextUri);
+
+      // Map track function for consistent data structure
+      const mapTrack = (t) => {
+        if (!t) return null;
+        const trackUri = t.uri || t.contextTrack?.uri || t.track?.uri || t.item?.uri || t.contextTrack?.metadata?.uri || t.metadata?.uri;
+        const metadata = t.contextTrack?.metadata || t.metadata || {};
+        return {
+          title: metadata.title || t.track?.name || t.item?.title || t.name || "Unknown Title",
+          artist: Object.keys(metadata).filter(k => k.startsWith('artist_name')).sort((a, b) => a.localeCompare(b, undefined, { numeric: true })).map(k => metadata[k]).filter(Boolean).join(', ') || t.track?.artists?.map(a => a.name).join(', ') || "Unknown Artist",
+          album_cover: metadata.image_url || t.track?.album?.images?.[0]?.url || t.item?.album?.images?.[0]?.url || t.album?.images?.[0]?.url,
+          uri: trackUri,
+        };
+      };
 
       const repeatModeRaw = typeof Spicetify.Player.getRepeat === 'function'
         ? Spicetify.Player.getRepeat()
@@ -49,7 +72,7 @@
             title: current.title,
             artist: Spicetify.Player.data.item?.artists?.map(artist => artist.name).join(', '),
             album_cover: current.image_url,
-            uri: Spicetify.Player.data?.item?.uri,
+            uri: currentUri,
             isPlaying: Spicetify.Player.isPlaying(),
             repeatMode,
             shuffle: shuffleState,
@@ -59,21 +82,44 @@
             formattedProgress: Spicetify.Player.formatTime(Spicetify.Player.getProgress()),
             progressPercent: Spicetify.Player.getProgressPercent(),
           }
-        : {};
+        : null;
 
-      const mapTrack = (t) => {
-        const trackUri = t.uri || t.contextTrack?.uri || t.track?.uri || t.item?.uri || t.contextTrack?.metadata?.uri || t.metadata?.uri;
-        const metadata = t.contextTrack?.metadata || t.metadata || {};
-        return {
-          title: metadata.title || t.track?.name || t.item?.title || t.name || "Unknown Title",
-          artist: Object.keys(metadata).filter(k => k.startsWith('artist_name')).sort((a, b) => a.localeCompare(b, undefined, { numeric: true })).map(k => metadata[k]).filter(Boolean).join(', ') || t.track?.artists?.map(a => a.name).join(', ') || "Unknown Artist",
-          album_cover: metadata.image_url || t.track?.album?.images?.[0]?.url || t.item?.album?.images?.[0]?.url || t.album?.images?.[0]?.url,
-          uri: trackUri,
-        };
-      };
+      // Local history logic: 
+      // Add previous song to history when track changes
+      if (currentUri && currentUri !== lastTrackUri) {
+        if (lastTrackUri && lastNowPlaying) {
+          // Add the track that just finished to the local history
+          const historyEntry = {
+            title: lastNowPlaying.title,
+            artist: lastNowPlaying.artist,
+            album_cover: lastNowPlaying.album_cover,
+            uri: lastNowPlaying.uri,
+          };
+          
+          // Check if track is already the most recent entry to avoid duplicates
+          if (localHistory.length === 0 || localHistory[0].uri !== historyEntry.uri) {
+            localHistory.unshift(historyEntry);
+            // Limit history to 50 items
+            if (localHistory.length > 50) {
+              localHistory.pop();
+            }
+            // Save to localStorage
+            try {
+              localStorage.setItem('nextpeek_history', JSON.stringify(localHistory));
+            } catch (e) {
+              console.error('Failed to save history to localStorage:', e);
+            }
+          }
+        }
+        lastTrackUri = currentUri;
+      }
+      
+      // Cache current track info so it can be added to history on the next track change
+      if (nowPlaying) {
+        lastNowPlaying = nowPlaying;
+      }
 
-      const q = nextTracks.map(mapTrack);
-      const history = prevTracks.map(mapTrack).reverse();
+      const q = nextTracks.map(mapTrack).filter(Boolean);
 
       await fetch("http://localhost:7192/api/updateQueue", {
         method: "POST",
@@ -81,7 +127,7 @@
         body: JSON.stringify({
           nowPlaying,
           queue: q,
-          history: history,
+          history: localHistory,
           repeatMode,
           shuffle: shuffleState,
         }),
