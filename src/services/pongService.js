@@ -311,12 +311,11 @@ function handleStartPong() {
 
     const win = new BrowserWindow(winOptions);
 
-    const queryParams = `?mode=${mode}`;
     if (context.viteDevServerUrl) {
-      win.loadURL(context.viteDevServerUrl + queryParams);
+      win.loadURL(`${context.viteDevServerUrl}?mode=${mode}`);
     } else {
       // Use path.join for file loading
-      win.loadFile(path.join(__dirname, `../../renderer/${context.viteName}/index.html`), { query: { mode } });
+      win.loadFile(path.join(__dirname, `../renderer/${context.viteName}/index.html`), { query: { mode } });
     }
     
     win.on('closed', () => {
