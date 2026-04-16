@@ -120,6 +120,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const root = ReactDOM.createRoot(rootElement);
   let currentTheme = document.body.dataset.theme || 'solid';
   let customImageTextColor = document.body.dataset.customImageTextColor || 'white';
+  let alwaysOnTopWhenPinned = true;
+  let alwaysOnTopWhenUnpinned = true;
   let isLoginSettingsOpen = false;
   let loginSettingsRoot = null;
   let renderLoginSettingsModal = () => {};
@@ -276,13 +278,35 @@ document.addEventListener('DOMContentLoaded', () => {
           onCustomImageTextColorChange={(color) => {
             setCustomImageTextColor(color);
           }}
+          alwaysOnTopWhenPinned={alwaysOnTopWhenPinned}
+          alwaysOnTopWhenUnpinned={alwaysOnTopWhenUnpinned}
+          onAlwaysOnTopWhenPinnedChange={async (value) => {
+            const newState = await window.electronAPI.toggleAlwaysOnTopWhenPinned();
+            alwaysOnTopWhenPinned = newState;
+            renderLoginSettingsModal();
+          }}
+          onAlwaysOnTopWhenUnpinnedChange={async (value) => {
+            const newState = await window.electronAPI.toggleAlwaysOnTopWhenUnpinned();
+            alwaysOnTopWhenUnpinned = newState;
+            renderLoginSettingsModal();
+          }}
         />
       </React.StrictMode>
     );
   };
 
   if (loginSettingsBtn) {
-    loginSettingsBtn.addEventListener('click', () => {
+    loginSettingsBtn.addEventListener('click', async () => {
+      // Fetch current always-on-top states from main process
+      if (window.electronAPI && window.electronAPI.getAlwaysOnTopStates) {
+        try {
+          const states = await window.electronAPI.getAlwaysOnTopStates();
+          alwaysOnTopWhenPinned = states.whenPinned;
+          alwaysOnTopWhenUnpinned = states.whenUnpinned;
+        } catch (error) {
+          console.error('Failed to fetch always-on-top states:', error);
+        }
+      }
       isLoginSettingsOpen = true;
       renderLoginSettingsModal();
     });
@@ -562,7 +586,7 @@ document.addEventListener('DOMContentLoaded', () => {
     pinButton.addEventListener('click', () => {
       window.electronAPI.togglePin();
     });
-    
+
     // Listen for pin state changes from main process
     if (window.electronAPI && window.electronAPI.onPinStateChange) {
       window.electronAPI.onPinStateChange((event, isPinned) => {
@@ -573,6 +597,18 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       });
     }
+  }
+
+  // Listen for always-on-top states changes from main process
+  if (window.electronAPI && window.electronAPI.onAlwaysOnTopStatesChange) {
+    window.electronAPI.onAlwaysOnTopStatesChange((event, states) => {
+      alwaysOnTopWhenPinned = states.whenPinned;
+      alwaysOnTopWhenUnpinned = states.whenUnpinned;
+      // Always update local state, re-render modal only if open
+      if (isLoginSettingsOpen) {
+        renderLoginSettingsModal();
+      }
+    });
   }
 
   // Handle go-home event

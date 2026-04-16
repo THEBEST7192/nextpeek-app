@@ -1,7 +1,7 @@
 import React, { useEffect, useCallback } from 'react';
 import closeIcon from '../assets/icons/close.svg';
 
-const SettingsModal = ({ isOpen, onClose, currentTheme, onThemeChange, onUploadImage, customImageTextColor, onCustomImageTextColorChange }) => {
+const SettingsModal = ({ isOpen, onClose, currentTheme, onThemeChange, onUploadImage, customImageTextColor, onCustomImageTextColorChange, alwaysOnTopWhenPinned, alwaysOnTopWhenUnpinned, onAlwaysOnTopWhenPinnedChange, onAlwaysOnTopWhenUnpinnedChange }) => {
   const handleClose = useCallback(() => {
     if (onClose) {
       onClose();
@@ -150,6 +150,43 @@ const SettingsModal = ({ isOpen, onClose, currentTheme, onThemeChange, onUploadI
               </div>
             </section>
           )}
+
+          <section className="settings-section">
+            <div className="settings-section__header">
+              <h3>Window Behavior</h3>
+              <p>Control how the window appears relative to other applications.</p>
+            </div>
+            <div className="settings-toggle-options">
+              <div className="settings-toggle-option">
+                <div className="settings-toggle-option__info">
+                  <span className="settings-toggle-option__title">Stay on top when docked</span>
+                  <span className="settings-toggle-option__description">Always on top when snapped to edge</span>
+                </div>
+                <label className="toggle-switch">
+                  <input
+                    type="checkbox"
+                    checked={alwaysOnTopWhenPinned}
+                    onChange={(e) => onAlwaysOnTopWhenPinnedChange?.(e.target.checked)}
+                  />
+                  <span className="toggle-slider"></span>
+                </label>
+              </div>
+              <div className="settings-toggle-option">
+                <div className="settings-toggle-option__info">
+                  <span className="settings-toggle-option__title">Stay on top when freely moveable</span>
+                  <span className="settings-toggle-option__description">Always on top when moved freely</span>
+                </div>
+                <label className="toggle-switch">
+                  <input
+                    type="checkbox"
+                    checked={alwaysOnTopWhenUnpinned}
+                    onChange={(e) => onAlwaysOnTopWhenUnpinnedChange?.(e.target.checked)}
+                  />
+                  <span className="toggle-slider"></span>
+                </label>
+              </div>
+            </div>
+          </section>
         </div>
       </div>
     </div>

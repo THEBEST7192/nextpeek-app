@@ -86,3 +86,12 @@ To enable NextPeek to receive queue information from Spotify, you need to instal
 *   Pin/Unpin window.
 *   Snap window to screen edges.
 *   Receives queue via local Spicetify bridge (no Spotify API auth).
+
+## Window Behavior
+
+| Window State | Stay on top when docked | Stay on top when freely moveable | Result |
+|-------------|------------------------|----------------------------------|--------|
+| Docked | On | Any | Always on top |
+| Docked | Off | Any | Normal window |
+| Freely moveable | Any | On | Always on top |
+| Freely moveable | Any | Off | Normal window |

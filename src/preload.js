@@ -9,11 +9,18 @@ contextBridge.exposeInMainWorld('electronAPI', {
   togglePlayPause: () => ipcRenderer.send('toggle-play-pause'),
   skipPrevious: () => ipcRenderer.invoke('previous-track'),
   skipNext: () => ipcRenderer.invoke('next-track'),
-  togglePin: () => ipcRenderer.send('toggle-pin'),
+  togglePin: () => ipcRenderer.invoke('toggle-pin'),
   snapWindow: () => ipcRenderer.send('snap-window'),
+  toggleAlwaysOnTopWhenPinned: () => ipcRenderer.invoke('toggle-always-on-top-when-pinned'),
+  toggleAlwaysOnTopWhenUnpinned: () => ipcRenderer.invoke('toggle-always-on-top-when-unpinned'),
+  getAlwaysOnTopStates: () => ipcRenderer.invoke('get-always-on-top-states'),
   onPinStateChange: (callback) => {
     ipcRenderer.on('pin-state-changed', callback);
     return () => ipcRenderer.removeListener('pin-state-changed', callback);
+  },
+  onAlwaysOnTopStatesChange: (callback) => {
+    ipcRenderer.on('always-on-top-states-changed', callback);
+    return () => ipcRenderer.removeListener('always-on-top-states-changed', callback);
   },
   removePinStateListener: () => ipcRenderer.removeAllListeners('pin-state-changed'),
   onPlayStateChange: (callback) => {

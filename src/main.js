@@ -28,6 +28,9 @@ const SHOW_COOLDOWN = 500; // ms cooldown before showing again
 let showDelayTimeout = null; // Delay before showing sidebar
 const SHOW_DELAY = 200; // ms delay before showing sidebar
 let isPinned = true; // Track pin state - Start with pin on
+let isDocked = true; // Track if window is docked to edge - Start with docked
+let isAlwaysOnTopWhenPinned = true; // Track always-on-top when pinned - Start with always on top
+let isAlwaysOnTopWhenUnpinned = true; // Track always-on-top when unpinned - Start with always on top
 let isPlaying = false; // Track play state - Start with paused
 let currentSide = 'left'; // Track which side the sidebar is docked on
 let queueServer = null; // Queue server instance
@@ -206,7 +209,7 @@ const createWindow = (options = {}) => {
     transparent: themeConfig.transparent,
     backgroundColor: themeConfig.backgroundColor,
     resizable: true,
-    alwaysOnTop: isPinned,
+    alwaysOnTop: isAlwaysOnTopWhenPinned,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
@@ -236,20 +239,44 @@ const createWindow = (options = {}) => {
     }
     const currentBounds = mainWindow.getBounds();
     lastKnownBounds = { ...currentBounds };
+
+    // Check if window is docked to an edge
+    const activeDisplay = getDisplayForWindow();
+    if (activeDisplay) {
+      const workArea = activeDisplay.workArea;
+      const isAtLeftEdge = Math.abs(currentBounds.x - workArea.x) < 5;
+      const isAtRightEdge = Math.abs((currentBounds.x + currentBounds.width) - (workArea.x + workArea.width)) < 5;
+      const wasDocked = isDocked;
+      isDocked = isAtLeftEdge || isAtRightEdge;
+
+      // If docked state changed, apply appropriate always-on-top toggle state
+      if (wasDocked !== isDocked) {
+        if (isDocked) {
+          // Since Window is docked, apply "Stay on top when docked" toggle
+          if (isAlwaysOnTopWhenPinned) {
+            mainWindow.setAlwaysOnTop(true, 'screen-saver');
+            mainWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
+          } else {
+            mainWindow.setAlwaysOnTop(false);
+            mainWindow.setVisibleOnAllWorkspaces(false);
+          }
+        } else {
+          // Window is now freely moveable, apply "Stay on top when freely moveable" toggle
+          if (isAlwaysOnTopWhenUnpinned) {
+            mainWindow.setAlwaysOnTop(true, 'screen-saver');
+            mainWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
+          } else {
+            mainWindow.setAlwaysOnTop(false);
+            mainWindow.setVisibleOnAllWorkspaces(false);
+          }
+        }
+      }
+    }
   };
 
   mainWindow.on('move', captureBounds);
   mainWindow.on('resize', captureBounds);
 
-  // Apply current pin state for always-on-top behaviour
-  if (isPinned) {
-    mainWindow.setAlwaysOnTop(true, 'screen-saver');
-    mainWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
-  } else {
-    mainWindow.setAlwaysOnTop(false);
-    mainWindow.setVisibleOnAllWorkspaces(false);
-  }
-  
   mainWindow.setSkipTaskbar(false);
   
   // Send initial play state to renderer
@@ -257,6 +284,10 @@ const createWindow = (options = {}) => {
     mainWindow.webContents.send('play-state-changed', isPlaying);
     sendThemeUpdate();
     mainWindow.webContents.send('pin-state-changed', isPinned);
+    mainWindow.webContents.send('always-on-top-states-changed', {
+      whenPinned: isAlwaysOnTopWhenPinned,
+      whenUnpinned: isAlwaysOnTopWhenUnpinned
+    });
     const queueData = getCurrentQueue();
     if (queueData) {
       mainWindow.webContents.send('queue-updated', queueData);
@@ -570,12 +601,11 @@ const showSidebar = (side = 'left') => {
 // Function to toggle pin state
 const togglePin = () => {
   if (!mainWindow) return;
-  
+
   // Store current state before changing
   const wasPinned = isPinned;
   isPinned = !isPinned;
-  mainWindow.setAlwaysOnTop(true); // Always keep window on top
-  
+
   // If pinning, ensure window is visible and on screen
   if (isPinned) {
     if (!mainWindow.isVisible()) {
@@ -593,13 +623,19 @@ const togglePin = () => {
       clearTimeout(showDelayTimeout);
       showDelayTimeout = null;
     }
-    
+
     // Get current bounds to maintain position when pinning
     const currentBounds = mainWindow.getBounds();
     const activeDisplay = getDisplayForWindow();
     if (!activeDisplay) return;
-    const targetWidth = getTargetWidth(activeDisplay.workArea);
-    
+    const workArea = activeDisplay.workArea;
+    const targetWidth = getTargetWidth(workArea);
+
+    // Check if window is currently docked to an edge (for tracking purposes only)
+    const isAtLeftEdge = Math.abs(currentBounds.x - workArea.x) < 5;
+    const isAtRightEdge = Math.abs((currentBounds.x + currentBounds.width) - (workArea.x + workArea.width)) < 5;
+    isDocked = isAtLeftEdge || isAtRightEdge;
+
     // Keep the same position but adjust width/height
     mainWindow.setBounds({
       x: currentBounds.x,
@@ -615,10 +651,13 @@ const togglePin = () => {
     const targetWidth = getTargetWidth(workArea);
     mainWindow.setIgnoreMouseEvents(false);
 
+    // Snap to edge, so set docked to true
+    isDocked = true;
+
     // Determine which side is closer (left or right)
     const distToLeft = Math.abs(currentBounds.x - workArea.x);
     const distToRight = Math.abs((currentBounds.x + currentBounds.width) - (workArea.x + workArea.width));
-    
+
     // Snap to the closest edge, similar to pinning behavior
     let newX;
     if (distToLeft <= distToRight) {
@@ -630,7 +669,7 @@ const togglePin = () => {
       newX = workArea.x + workArea.width - targetWidth;
       currentSide = 'right';
     }
-    
+
     // Move the window to the edge
     mainWindow.setBounds({
       x: newX,
@@ -638,14 +677,14 @@ const togglePin = () => {
       width: targetWidth,
       height: workArea.height
     });
-    
+
     if (!app.isPackaged) {
       console.log(`Window unpinned and snapped to ${currentSide} edge: (${newX}, ${workArea.y})`);
     }
-    
+
     // No need to update currentSide as we've already set it above
   }
-  
+
   // Send pin state to renderer
   mainWindow.webContents.send('pin-state-changed', isPinned);
 };
@@ -821,6 +860,49 @@ app.whenReady().then(async () => {
   ipcMain.handle('toggle-pin', () => {
     togglePin();
     return isPinned;
+  });
+
+  ipcMain.handle('toggle-always-on-top-when-pinned', () => {
+    if (!mainWindow) return;
+    isAlwaysOnTopWhenPinned = !isAlwaysOnTopWhenPinned;
+    // Apply the new state immediately
+    if (isAlwaysOnTopWhenPinned) {
+      mainWindow.setAlwaysOnTop(true, 'screen-saver');
+      mainWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
+    } else {
+      mainWindow.setAlwaysOnTop(false);
+      mainWindow.setVisibleOnAllWorkspaces(false);
+    }
+    mainWindow.webContents.send('always-on-top-states-changed', {
+      whenPinned: isAlwaysOnTopWhenPinned,
+      whenUnpinned: isAlwaysOnTopWhenUnpinned
+    });
+    return isAlwaysOnTopWhenPinned;
+  });
+
+  ipcMain.handle('toggle-always-on-top-when-unpinned', () => {
+    if (!mainWindow) return;
+    isAlwaysOnTopWhenUnpinned = !isAlwaysOnTopWhenUnpinned;
+    // Apply the new state immediately
+    if (isAlwaysOnTopWhenUnpinned) {
+      mainWindow.setAlwaysOnTop(true, 'screen-saver');
+      mainWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
+    } else {
+      mainWindow.setAlwaysOnTop(false);
+      mainWindow.setVisibleOnAllWorkspaces(false);
+    }
+    mainWindow.webContents.send('always-on-top-states-changed', {
+      whenPinned: isAlwaysOnTopWhenPinned,
+      whenUnpinned: isAlwaysOnTopWhenUnpinned
+    });
+    return isAlwaysOnTopWhenUnpinned;
+  });
+
+  ipcMain.handle('get-always-on-top-states', () => {
+    return {
+      whenPinned: isAlwaysOnTopWhenPinned,
+      whenUnpinned: isAlwaysOnTopWhenUnpinned
+    };
   });
 
   ipcMain.handle('apply-theme', async (event, themeKey) => {
@@ -1010,6 +1092,9 @@ ipcMain.on('snap-window', () => {
     // Determine if currently snapped to left or right
     const isSnappedLeft = Math.abs(currentBounds.x - workArea.x) <= EPS && widthClose;
     const isSnappedRight = Math.abs(currentBounds.x - (workArea.x + workArea.width - targetWidth)) <= EPS && widthClose;
+
+    // Set docked to true because of edge snap
+    isDocked = true;
 
     if (isSnappedLeft) {
       // If snapped left, snap to right
