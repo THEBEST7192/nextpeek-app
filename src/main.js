@@ -399,11 +399,11 @@ const startMouseTracking = () => {
     if (!activeWindowDisplay) return; // enforce window's display only
     const workAreaForWindow = activeWindowDisplay.workArea;
     const windowBounds = mainWindow.getBounds();
-    const targetWidth = getTargetWidth(workAreaForWindow);
+    const currentWidth = windowBounds.width;
 
     // Detect which edge the window is currently docked to and update currentSide
     const isOnLeftEdge = Math.abs(windowBounds.x - workAreaForWindow.x) < 5;
-    const isOnRightEdge = Math.abs(windowBounds.x - (workAreaForWindow.x + workAreaForWindow.width - targetWidth)) < 5;
+    const isOnRightEdge = Math.abs(windowBounds.x + windowBounds.width - (workAreaForWindow.x + workAreaForWindow.width)) < 5;
     // Always keep currentSide in sync with actual docking, even when pinned
     if (isOnLeftEdge || isOnRightEdge) {
       currentSide = isOnLeftEdge ? 'left' : 'right';
@@ -508,14 +508,15 @@ const showSidebar = (side = 'left') => {
   const activeDisplay = getDisplayForWindow();
   if (!activeDisplay) return; // window not ready
   const workArea = activeDisplay.workArea;
-  const targetWidth = getTargetWidth(workArea);
+  const currentBounds = mainWindow.getBounds();
+  const currentWidth = currentBounds.width;
 
   // Clear any pending hide timeout
   if (hideTimeout) {
     clearTimeout(hideTimeout);
     hideTimeout = null;
   }
-  
+
   // Clear any pending show delay
   if (showDelayTimeout) {
     clearTimeout(showDelayTimeout);
@@ -523,7 +524,7 @@ const showSidebar = (side = 'left') => {
   }
 
   // Set position based on side
-  const targetX = side === 'left' ? workArea.x : workArea.x + workArea.width - targetWidth;
+  const targetX = side === 'left' ? workArea.x : workArea.x + workArea.width - currentWidth;
   if (!app.isPackaged) {
     console.log(`Setting targetX for ${side} side: ${targetX}`);
   }
@@ -535,27 +536,27 @@ const showSidebar = (side = 'left') => {
   if (!mainWindow.isVisible()) {
     mainWindow.show();
   }
-  
+
   // Force focus to ensure animation works properly
   mainWindow.focus();
 
   // Set initial position off-screen but within the same display
   // Instead of moving completely off-screen, we'll keep a small portion visible
-  const startX = side === 'left' ? workArea.x - targetWidth + 5 : workArea.x + workArea.width - 5;
+  const startX = side === 'left' ? workArea.x - currentWidth + 5 : workArea.x + workArea.width - 5;
   if (!app.isPackaged) {
     console.log(`Animation starting: side=${side}, startX=${startX}, targetX=${targetX}`);
   }
-  
+
   // Force window to be visible before animation
   if (!mainWindow.isVisible()) {
     mainWindow.show();
   }
-  
+
   // Ensure window is properly positioned before animation
   mainWindow.setBounds({
     x: startX,
     y: workArea.y,
-    width: targetWidth,
+    width: currentWidth,
     height: workArea.height
   });
 
@@ -566,21 +567,21 @@ const showSidebar = (side = 'left') => {
   const animationSteps = ANIMATION_DURATION / animationStep;
   const stepIncrement = 1 / animationSteps;
   const xDistance = targetX - startX;
-  
+
   const animateStep = () => {
     progress += stepIncrement;
     if (progress >= 1) progress = 1;
-    
+
     const currentX = startX + (xDistance * progress);
-    
+
     if (!app.isPackaged) {
       console.log(`Animation step: side=${side}, progress=${progress.toFixed(2)}, currentX=${Math.round(currentX)}`);
     }
-    
+
     mainWindow.setBounds({
       x: Math.round(currentX),
       y: workArea.y,
-      width: targetWidth,
+      width: currentWidth,
       height: workArea.height
     });
 
@@ -629,18 +630,17 @@ const togglePin = () => {
     const activeDisplay = getDisplayForWindow();
     if (!activeDisplay) return;
     const workArea = activeDisplay.workArea;
-    const targetWidth = getTargetWidth(workArea);
 
     // Check if window is currently docked to an edge (for tracking purposes only)
     const isAtLeftEdge = Math.abs(currentBounds.x - workArea.x) < 5;
     const isAtRightEdge = Math.abs((currentBounds.x + currentBounds.width) - (workArea.x + workArea.width)) < 5;
     isDocked = isAtLeftEdge || isAtRightEdge;
 
-    // Keep the same position but adjust width/height
+    // Keep the same position but adjust height, use current width
     mainWindow.setBounds({
       x: currentBounds.x,
       y: currentBounds.y,
-      width: targetWidth,
+      width: currentBounds.width,
       height: activeDisplay.workArea.height
     });
   } else { // When unpinning
@@ -648,7 +648,6 @@ const togglePin = () => {
     if (!activeDisplay) return;
     const workArea = activeDisplay.workArea;
     const currentBounds = mainWindow.getBounds();
-    const targetWidth = getTargetWidth(workArea);
     mainWindow.setIgnoreMouseEvents(false);
 
     // Snap to edge, so set docked to true
@@ -666,15 +665,15 @@ const togglePin = () => {
       currentSide = 'left';
     } else {
       // Snap to right edge
-      newX = workArea.x + workArea.width - targetWidth;
+      newX = workArea.x + workArea.width - currentBounds.width;
       currentSide = 'right';
     }
 
-    // Move the window to the edge
+    // Move the window to the edge, keep current width
     mainWindow.setBounds({
       x: newX,
       y: workArea.y,
-      width: targetWidth,
+      width: currentBounds.width,
       height: workArea.height
     });
 
@@ -706,14 +705,14 @@ const hideSidebar = () => {
   if (!activeDisplay) return; // window not ready
   const workArea = activeDisplay.workArea;
   const windowBounds = mainWindow.getBounds();
-  const targetWidth = getTargetWidth(workArea);
+  const currentWidth = windowBounds.width;
 
   // Determine which side we're on - use approximate comparison for floating point values
   const isOnLeft = Math.abs(windowBounds.x - workArea.x) < 5;
-  const isOnRight = Math.abs(windowBounds.x - (workArea.x + workArea.width - targetWidth)) < 5;
+  const isOnRight = Math.abs(windowBounds.x + windowBounds.width - (workArea.x + workArea.width)) < 5;
   
   if (!app.isPackaged) {
-    console.log(`Side detection: windowBounds.x=${windowBounds.x}, workArea.x=${workArea.x}, right edge=${workArea.x + workArea.width - targetWidth}`);
+    console.log(`Side detection: windowBounds.x=${windowBounds.x}, workArea.x=${workArea.x}, right edge=${workArea.x + workArea.width - currentWidth}`);
     console.log(`Side detection result: isOnLeft=${isOnLeft}, isOnRight=${isOnRight}`);
   }
 
@@ -729,13 +728,13 @@ const hideSidebar = () => {
   let hasAdjacentMonitor = false;
 
   if (isOnLeft) {
-    hasAdjacentMonitor = allDisplays.some(display => 
-      display.id !== activeDisplay.id && 
+    hasAdjacentMonitor = allDisplays.some(display =>
+      display.id !== activeDisplay.id &&
       display.workArea.x + display.workArea.width === activeDisplay.workArea.x
     );
   } else if (isOnRight) {
-    hasAdjacentMonitor = allDisplays.some(display => 
-      display.id !== activeDisplay.id && 
+    hasAdjacentMonitor = allDisplays.some(display =>
+      display.id !== activeDisplay.id &&
       display.workArea.x === activeDisplay.workArea.x + activeDisplay.workArea.width
     );
   }
@@ -753,12 +752,12 @@ const hideSidebar = () => {
   // Calculate animation parameters
   const startX = windowBounds.x;
   // Keep a small portion visible to prevent moving to adjacent monitors
-  const targetX = isOnLeft ? workArea.x - targetWidth + 5 : workArea.x + workArea.width - 5;
-  
+  const targetX = isOnLeft ? workArea.x - currentWidth + 5 : workArea.x + workArea.width - 5;
+
   if (!app.isPackaged) {
     console.log(`Hide animation: isOnLeft=${isOnLeft}, isOnRight=${isOnRight}, startX=${startX}, targetX=${targetX}`);
   }
-  
+
   // Use setTimeout for animation instead of requestAnimationFrame
   isAnimating = true; // Mark animation as in progress
   let progress = 0;
@@ -766,21 +765,21 @@ const hideSidebar = () => {
   const animationSteps = ANIMATION_DURATION / animationStep;
   const stepIncrement = 1 / animationSteps;
   const xDistance = targetX - startX;
-  
+
   const animateStep = () => {
     progress += stepIncrement;
     if (progress >= 1) progress = 1;
-    
+
     const currentX = startX + (xDistance * progress);
-    
+
     if (!app.isPackaged) {
       console.log(`Hide animation step: progress=${progress.toFixed(2)}, currentX=${Math.round(currentX)}`);
     }
-    
+
     mainWindow.setBounds({
       x: Math.round(currentX),
       y: workArea.y,
-      width: targetWidth,
+      width: currentWidth,
       height: workArea.height
     });
 
@@ -802,25 +801,26 @@ const hideSidebar = () => {
 // Function to initialize window size and position
 const initializeWindowSize = () => {
   if (!mainWindow || mainWindow.isDestroyed()) return;
-  
+
   const activeDisplay = getDisplayForWindow();
   if (!activeDisplay) return;
-  
+
   const workArea = activeDisplay.workArea;
-  const targetWidth = getTargetWidth(workArea);
+  const currentBounds = mainWindow.getBounds();
+  const currentWidth = currentBounds.width;
 
   // Set the window to the correct size and position based on current side
-  const targetX = currentSide === 'left' ? workArea.x : workArea.x + workArea.width - targetWidth;
-  
+  const targetX = currentSide === 'left' ? workArea.x : workArea.x + workArea.width - currentWidth;
+
   mainWindow.setBounds({
     x: targetX,
     y: workArea.y,
-    width: targetWidth,
+    width: currentWidth,
     height: workArea.height
   });
-  
+
   if (!app.isPackaged) {
-    console.log(`Window initialized: side=${currentSide}, position=(${targetX}, ${workArea.y}), size=${targetWidth}x${workArea.height}`);
+    console.log(`Window initialized: side=${currentSide}, position=(${targetX}, ${workArea.y}), size=${currentWidth}x${workArea.height}`);
   }
 };
 
@@ -1083,15 +1083,13 @@ ipcMain.on('snap-window', () => {
     const currentBounds = mainWindow.getBounds();
     const activeDisplay = getDisplayForWindow();
     const workArea = activeDisplay.workArea;
-    const targetWidth = getTargetWidth(workArea);
     const targetHeight = workArea.height;
     // Allow for minor DPI/frame rounding differences
     const EPS = 6;
-    const widthClose = Math.abs(currentBounds.width - targetWidth) <= EPS;
 
     // Determine if currently snapped to left or right
-    const isSnappedLeft = Math.abs(currentBounds.x - workArea.x) <= EPS && widthClose;
-    const isSnappedRight = Math.abs(currentBounds.x - (workArea.x + workArea.width - targetWidth)) <= EPS && widthClose;
+    const isSnappedLeft = Math.abs(currentBounds.x - workArea.x) <= EPS;
+    const isSnappedRight = Math.abs(currentBounds.x + currentBounds.width - (workArea.x + workArea.width)) <= EPS;
 
     // Set docked to true because of edge snap
     isDocked = true;
@@ -1099,9 +1097,9 @@ ipcMain.on('snap-window', () => {
     if (isSnappedLeft) {
       // If snapped left, snap to right
       mainWindow.setBounds({
-        x: workArea.x + workArea.width - targetWidth,
+        x: workArea.x + workArea.width - currentBounds.width,
         y: workArea.y,
-        width: targetWidth,
+        width: currentBounds.width,
         height: targetHeight,
       });
       currentSide = 'right';
@@ -1110,7 +1108,7 @@ ipcMain.on('snap-window', () => {
       mainWindow.setBounds({
         x: workArea.x,
         y: workArea.y,
-        width: targetWidth,
+        width: currentBounds.width,
         height: targetHeight,
       });
       currentSide = 'left';
@@ -1124,16 +1122,16 @@ ipcMain.on('snap-window', () => {
         mainWindow.setBounds({
           x: workArea.x,
           y: workArea.y,
-          width: targetWidth,
+          width: currentBounds.width,
           height: targetHeight,
         });
         currentSide = 'left';
       } else {
         // Closer to right, snap right
         mainWindow.setBounds({
-          x: workArea.x + workArea.width - targetWidth,
+          x: workArea.x + workArea.width - currentBounds.width,
           y: workArea.y,
-          width: targetWidth,
+          width: currentBounds.width,
           height: targetHeight,
         });
         currentSide = 'right';
