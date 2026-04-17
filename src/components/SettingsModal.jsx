@@ -106,8 +106,8 @@ const SettingsModal = ({ isOpen, onClose, currentTheme, onThemeChange, onUploadI
                     className={`settings-theme-option${isActive ? ' settings-theme-option--active' : ''}${theme.isUpload ? ' settings-theme-option--upload' : ''}`}
                     onClick={handleClick}
                   >
-                    <span className="settings-theme-option__title">{theme.title}</span>
-                    <span className="settings-theme-option__description">{theme.description}</span>
+                    <span className="settings-option__title">{theme.title}</span>
+                    <span className="settings-option__description">{theme.description}</span>
                   </button>
                 );
               })}
@@ -156,11 +156,11 @@ const SettingsModal = ({ isOpen, onClose, currentTheme, onThemeChange, onUploadI
               <h3>Window Behavior</h3>
               <p>Control how the window appears relative to other applications.</p>
             </div>
-            <div className="settings-toggle-options">
-              <div className="settings-toggle-option">
-                <div className="settings-toggle-option__info">
-                  <span className="settings-toggle-option__title">Stay on top when docked</span>
-                  <span className="settings-toggle-option__description">Always on top when snapped to edge</span>
+            <div className="settings-theme-options">
+              <div className="settings-theme-option">
+                <div className="settings-option__info">
+                  <span className="settings-option__title">Stay on top when docked</span>
+                  <span className="settings-option__description">Always on top when snapped to edge</span>
                 </div>
                 <label className="toggle-switch">
                   <input
@@ -171,10 +171,10 @@ const SettingsModal = ({ isOpen, onClose, currentTheme, onThemeChange, onUploadI
                   <span className="toggle-slider"></span>
                 </label>
               </div>
-              <div className="settings-toggle-option">
-                <div className="settings-toggle-option__info">
-                  <span className="settings-toggle-option__title">Stay on top when freely moveable</span>
-                  <span className="settings-toggle-option__description">Always on top when moved freely</span>
+              <div className="settings-theme-option">
+                <div className="settings-option__info">
+                  <span className="settings-option__title">Stay on top when freely moveable</span>
+                  <span className="settings-option__description">Always on top when moved freely</span>
                 </div>
                 <label className="toggle-switch">
                   <input

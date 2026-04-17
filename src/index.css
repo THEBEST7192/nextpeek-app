@@ -270,7 +270,7 @@ body[data-theme='straightAlly'] #titlebar,
 body[data-theme='straightAlly'] .section-title,
 body[data-theme='straightAlly'] .settings-modal__header h2,
 body[data-theme='straightAlly'] .settings-section__header h3,
-body[data-theme='straightAlly'] .settings-theme-option__title,
+body[data-theme='straightAlly'] .settings-option__title,
 body[data-theme='straightAlly'] h1,
 body[data-theme='straightAlly'] h2,
 body[data-theme='straightAlly'] h3,
@@ -733,20 +733,20 @@ body[data-theme='asexual'] .settings-theme-option--active {
   background: rgba(0, 0, 0, 0.12);
 }
 
-body[data-theme='trans'] .settings-theme-option__title,
-body[data-theme='gay'] .settings-theme-option__title,
-body[data-theme='aroace'] .settings-theme-option__title,
-body[data-theme='lesbian'] .settings-theme-option__title,
-body[data-theme='asexual'] .settings-theme-option__title {
+body[data-theme='trans'] .settings-option__title,
+body[data-theme='gay'] .settings-option__title,
+body[data-theme='aroace'] .settings-option__title,
+body[data-theme='lesbian'] .settings-option__title,
+body[data-theme='asexual'] .settings-option__title {
   color: #000000;
 }
 
-body[data-theme='trans'] .settings-theme-option__description,
-body[data-theme='gay'] .settings-theme-option__description,
-body[data-theme='aroace'] .settings-theme-option__description,
-body[data-theme='lesbian'] .settings-theme-option__description,
-body[data-theme='asexual'] .settings-theme-option__description,
-body[data-theme='straightAlly'] .settings-theme-option__description {
+body[data-theme='trans'] .settings-option__description,
+body[data-theme='gay'] .settings-option__description,
+body[data-theme='aroace'] .settings-option__description,
+body[data-theme='lesbian'] .settings-option__description,
+body[data-theme='asexual'] .settings-option__description,
+body[data-theme='straightAlly'] .settings-option__description {
   color: rgba(0, 0, 0, 0.6);
 }
 
@@ -993,46 +993,6 @@ input:checked + .toggle-slider {
 input:checked + .toggle-slider:before {
   transform: translateX(26px);
 }
-
-.settings-toggle-options {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.settings-toggle-option {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 12px;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 8px;
-}
-
-.settings-toggle-option .toggle-switch {
-  margin-left: 10px;
-  margin-right: 3px;
-}
-
-.settings-toggle-option__info {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  flex: 1;
-}
-
-.settings-toggle-option__title {
-  font-weight: 600;
-  font-size: 14px;
-  color: #ffffff;
-}
-
-.settings-toggle-option__description {
-  font-size: 12px;
-  color: rgba(255, 255, 255, 0.6);
-}
-
 
 /* Login Screen Styles */
 #login-screen {
@@ -1719,11 +1679,23 @@ body[data-theme='customImage'][data-custom-image-text-color='white'] .control-bu
   transition: border-color 0.2s ease, background-color 0.2s ease, transform 0.2s ease;
 }
 
+.settings-theme-option:has(.toggle-switch) {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  cursor: default;
+}
+
 .settings-theme-option:hover,
 .settings-theme-option:focus-visible {
   border-color: rgba(255, 255, 255, 0.2);
   background: rgba(255, 255, 255, 0.08);
   outline: none;
+}
+
+.settings-theme-option:has(.toggle-switch):hover {
+  border-color: rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.04);
 }
 
 .settings-theme-option:active {
@@ -1735,16 +1707,28 @@ body[data-theme='customImage'][data-custom-image-text-color='white'] .control-bu
   background: rgba(255, 255, 255, 0.12);
 }
 
-.settings-theme-option__title {
+.settings-option__info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+}
+
+.settings-option__title {
   font-size: 0.9rem;
   font-weight: 600;
 }
 
-.settings-theme-option__description {
+.settings-option__description {
   color: rgba(255, 255, 255, 0.6);
   font-size: 0.78rem;
   margin-top: 4px;
   line-height: 1.4;
+}
+
+.settings-theme-option .toggle-switch {
+  margin-left: 10px;
+  margin-right: 3px;
 }
 
 .settings-text-color-options {
