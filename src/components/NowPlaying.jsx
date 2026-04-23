@@ -45,6 +45,8 @@ const NowPlaying = () => {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [currentTheme, setCurrentTheme] = useState(() => document.body.dataset.theme || 'solid');
   const [customImageTextColor, setCustomImageTextColor] = useState(() => document.body.dataset.customImageTextColor || 'white');
+  const [alwaysOnTopWhenPinned, setAlwaysOnTopWhenPinned] = useState(true);
+  const [alwaysOnTopWhenUnpinned, setAlwaysOnTopWhenUnpinned] = useState(true);
   const [shuffleMode, setShuffleMode] = useState(0); // 0: off, 1: regular, 2: smart
   const [repeatMode, setRepeatMode] = useState(0);
   const [viewMode, setViewMode] = useState('queue'); // 'queue' or 'history'
@@ -218,6 +220,35 @@ const NowPlaying = () => {
           window.electronAPI.removeRecentlyPlayedListener();
         }
       };
+    }
+  }, []);
+
+  useEffect(() => {
+    const updateStates = (states) => {
+      setAlwaysOnTopWhenPinned(states.whenPinned);
+      setAlwaysOnTopWhenUnpinned(states.whenUnpinned);
+    };
+
+    // Fetch initial always-on-top states when component mounts
+    const fetchStates = async () => {
+      if (window.electronAPI && window.electronAPI.getAlwaysOnTopStates) {
+        try {
+          const states = await window.electronAPI.getAlwaysOnTopStates();
+          updateStates(states);
+        } catch (error) {
+          console.error('Failed to fetch always-on-top states:', error);
+        }
+      }
+    };
+    fetchStates();
+
+    // Listen for changes from main process
+    if (window.electronAPI && window.electronAPI.onAlwaysOnTopStatesChange) {
+      const handler = (event, states) => {
+        updateStates(states);
+      };
+      const unsubscribe = window.electronAPI.onAlwaysOnTopStatesChange(handler);
+      return unsubscribe;
     }
   }, []);
 
@@ -745,6 +776,16 @@ const NowPlaying = () => {
         onUploadImage={handleUploadImage}
         customImageTextColor={customImageTextColor}
         onCustomImageTextColorChange={handleCustomImageTextColorChange}
+        alwaysOnTopWhenPinned={alwaysOnTopWhenPinned}
+        alwaysOnTopWhenUnpinned={alwaysOnTopWhenUnpinned}
+        onAlwaysOnTopWhenPinnedChange={async (value) => {
+          const newState = await window.electronAPI.toggleAlwaysOnTopWhenPinned();
+          setAlwaysOnTopWhenPinned(newState);
+        }}
+        onAlwaysOnTopWhenUnpinnedChange={async (value) => {
+          const newState = await window.electronAPI.toggleAlwaysOnTopWhenUnpinned();
+          setAlwaysOnTopWhenUnpinned(newState);
+        }}
       />
     </div>
   );

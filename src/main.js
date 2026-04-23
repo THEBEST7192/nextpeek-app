@@ -89,6 +89,9 @@ const loadSettings = async () => {
   }
 
   try {
+    // Ensure directory exists before trying to read
+    await fs.mkdir(path.dirname(settingsFilePath), { recursive: true });
+
     const raw = await fs.readFile(settingsFilePath, 'utf8');
     const parsed = JSON.parse(raw);
 
@@ -102,6 +105,14 @@ const loadSettings = async () => {
 
     if (typeof parsed.customImageTextColor === 'string' && ['white', 'black'].includes(parsed.customImageTextColor)) {
       customImageTextColor = parsed.customImageTextColor;
+    }
+
+    if (typeof parsed.isAlwaysOnTopWhenPinned === 'boolean') {
+      isAlwaysOnTopWhenPinned = parsed.isAlwaysOnTopWhenPinned;
+    }
+
+    if (typeof parsed.isAlwaysOnTopWhenUnpinned === 'boolean') {
+      isAlwaysOnTopWhenUnpinned = parsed.isAlwaysOnTopWhenUnpinned;
     }
   } catch (error) {
     if (error.code !== 'ENOENT') {
@@ -119,6 +130,8 @@ const saveSettings = async () => {
     currentTheme,
     customBackgroundImageBase64,
     customImageTextColor,
+    isAlwaysOnTopWhenPinned,
+    isAlwaysOnTopWhenUnpinned,
   };
 
   try {
@@ -877,6 +890,7 @@ app.whenReady().then(async () => {
       whenPinned: isAlwaysOnTopWhenPinned,
       whenUnpinned: isAlwaysOnTopWhenUnpinned
     });
+    saveSettings();
     return isAlwaysOnTopWhenPinned;
   });
 
@@ -895,6 +909,7 @@ app.whenReady().then(async () => {
       whenPinned: isAlwaysOnTopWhenPinned,
       whenUnpinned: isAlwaysOnTopWhenUnpinned
     });
+    saveSettings();
     return isAlwaysOnTopWhenUnpinned;
   });
 

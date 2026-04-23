@@ -126,6 +126,25 @@ document.addEventListener('DOMContentLoaded', () => {
   let loginSettingsRoot = null;
   let renderLoginSettingsModal = () => {};
 
+  const updateAlwaysOnTopStates = (states) => {
+    alwaysOnTopWhenPinned = states.whenPinned;
+    alwaysOnTopWhenUnpinned = states.whenUnpinned;
+  };
+
+  const fetchAlwaysOnTopStates = async () => {
+    if (window.electronAPI && window.electronAPI.getAlwaysOnTopStates) {
+      try {
+        const states = await window.electronAPI.getAlwaysOnTopStates();
+        updateAlwaysOnTopStates(states);
+      } catch (error) {
+        console.error('Failed to fetch always-on-top states:', error);
+      }
+    }
+  };
+
+  // Fetch initial always-on-top states from main process
+  fetchAlwaysOnTopStates();
+
   const updateThemeUI = (themePayload) => {
     const payload = typeof themePayload === 'string' ? { theme: themePayload } : themePayload || {};
     const {
@@ -297,16 +316,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
   if (loginSettingsBtn) {
     loginSettingsBtn.addEventListener('click', async () => {
-      // Fetch current always-on-top states from main process
-      if (window.electronAPI && window.electronAPI.getAlwaysOnTopStates) {
-        try {
-          const states = await window.electronAPI.getAlwaysOnTopStates();
-          alwaysOnTopWhenPinned = states.whenPinned;
-          alwaysOnTopWhenUnpinned = states.whenUnpinned;
-        } catch (error) {
-          console.error('Failed to fetch always-on-top states:', error);
-        }
-      }
+      // Always fetch current always-on-top states from main process before opening modal
+      await fetchAlwaysOnTopStates();
       isLoginSettingsOpen = true;
       renderLoginSettingsModal();
     });
@@ -602,8 +613,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Listen for always-on-top states changes from main process
   if (window.electronAPI && window.electronAPI.onAlwaysOnTopStatesChange) {
     window.electronAPI.onAlwaysOnTopStatesChange((event, states) => {
-      alwaysOnTopWhenPinned = states.whenPinned;
-      alwaysOnTopWhenUnpinned = states.whenUnpinned;
+      updateAlwaysOnTopStates(states);
       // Always update local state, re-render modal only if open
       if (isLoginSettingsOpen) {
         renderLoginSettingsModal();
