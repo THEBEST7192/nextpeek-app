@@ -1982,3 +1982,89 @@ body[data-theme='straightAlly'] .song-progress-bar {
 label[for='money-display'] {
   display: none !important;
 }
+
+/* Lyrics Styles */
+.lyrics-container {
+  padding: 16px;
+  max-height: 400px;
+  overflow-y: auto;
+  text-align: center;
+}
+
+.lyrics-content {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.lyrics-line {
+  font-size: 22px;
+  line-height: 1.0;
+  color: rgba(255, 255, 255, 0.9);
+  margin: 0px 0;
+  padding: 4px 8px;
+  transition: color 0.2s ease;
+  white-space: normal;
+  word-wrap: break-word;
+}
+
+.lyrics-line:hover {
+  color: rgba(255, 255, 255, 1);
+}
+
+.lyrics-loading {
+  text-align: center;
+  padding: 40px 20px;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 14px;
+}
+
+.lyrics-error {
+  text-align: center;
+  padding: 40px 20px;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 14px;
+}
+
+/* Theme-specific lyrics text colors */
+body[data-theme='trans'] .lyrics-line,
+body[data-theme='gay'] .lyrics-line,
+body[data-theme='lesbian'] .lyrics-line,
+body[data-theme='asexual'] .lyrics-line,
+body[data-theme='aroace'] .lyrics-line {
+  color: rgba(0, 0, 0, 0.9);
+}
+
+body[data-theme='trans'] .lyrics-line:hover,
+body[data-theme='gay'] .lyrics-line:hover,
+body[data-theme='lesbian'] .lyrics-line:hover,
+body[data-theme='asexual'] .lyrics-line:hover,
+body[data-theme='aroace'] .lyrics-line:hover {
+  color: rgba(0, 0, 0, 1);
+}
+
+body[data-theme='trans'] .lyrics-loading,
+body[data-theme='gay'] .lyrics-loading,
+body[data-theme='lesbian'] .lyrics-loading,
+body[data-theme='asexual'] .lyrics-loading,
+body[data-theme='aroace'] .lyrics-loading,
+body[data-theme='trans'] .lyrics-error,
+body[data-theme='gay'] .lyrics-error,
+body[data-theme='lesbian'] .lyrics-error,
+body[data-theme='asexual'] .lyrics-error,
+body[data-theme='aroace'] .lyrics-error {
+  color: rgba(0, 0, 0, 0.6);
+}
+
+body[data-theme='customImage'][data-custom-image-text-color='black'] .lyrics-line {
+  color: rgba(0, 0, 0, 0.9);
+}
+
+body[data-theme='customImage'][data-custom-image-text-color='black'] .lyrics-line:hover {
+  color: rgba(0, 0, 0, 1);
+}
+
+body[data-theme='customImage'][data-custom-image-text-color='black'] .lyrics-loading,
+body[data-theme='customImage'][data-custom-image-text-color='black'] .lyrics-error {
+  color: rgba(0, 0, 0, 0.6);
+}

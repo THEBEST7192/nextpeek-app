@@ -86,6 +86,18 @@ To enable NextPeek to receive queue information from Spotify, you need to instal
 *   Pin/Unpin window.
 *   Snap window to screen edges.
 *   Receives queue via local Spicetify bridge (no Spotify API auth).
+*   View lyrics for currently playing tracks (powered by LRCLIB API).
+
+## Credits & Acknowledgements
+
+### Lyrics Feature
+
+The lyrics viewing functionality in NextPeek was inspired by [Lucid Lyrics](https://github.com/sanoojes/lucid-lyrics), a Spotify lyrics extension for Spicetify developed by [sanoojes](https://github.com/sanoojes) under the [GNU AGPLv3 license](https://github.com/sanoojes/lucid-lyrics/blob/main/LICENSE).
+
+The NextPeek implementation uses the LRCLIB API and lyrics fetching code adapted from Lucid Lyrics.
+
+For a complete list of acknowledgements and credits, see [ACKNOWLEDGEMENTS.md](./ACKNOWLEDGEMENTS.md) and [CREDITS.md](./CREDITS.md).
+
 
 ## Window Behavior
 

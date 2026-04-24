@@ -1,8 +1,10 @@
-import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import SearchBar from './SearchBar';
+import SettingsModal from './SettingsModal';
+import Lyrics from './Lyrics';
+import { fetchLyrics } from '../services/lrclib';
 import playIcon from '../assets/icons/play.svg';
 import pauseIcon from '../assets/icons/pause.svg';
-import SettingsModal from './SettingsModal.jsx';
 import repeatIcon from '../assets/icons/controls/repeat.png';
 import shuffleIcon from '../assets/icons/controls/shuffle.png';
 
@@ -49,8 +51,12 @@ const NowPlaying = () => {
   const [alwaysOnTopWhenUnpinned, setAlwaysOnTopWhenUnpinned] = useState(true);
   const [shuffleMode, setShuffleMode] = useState(0); // 0: off, 1: regular, 2: smart
   const [repeatMode, setRepeatMode] = useState(0);
-  const [viewMode, setViewMode] = useState('queue'); // 'queue' or 'history'
+  const [viewMode, setViewMode] = useState('queue'); // 'queue', 'history', or 'lyrics'
   const [recentlyPlayed, setRecentlyPlayed] = useState([]);
+  const [lyrics, setLyrics] = useState(null);
+  const [lyricsLoading, setLyricsLoading] = useState(false);
+  const [lyricsError, setLyricsError] = useState(null);
+  const prevLyricsTrackUri = useRef(null);
   const manualControlTimeout = useRef(null);
   const manualChangeTimeout = useRef(null);
   const lastSpotifyState = useRef(null);
@@ -614,6 +620,13 @@ const NowPlaying = () => {
     setViewMode('history');
   };
 
+  const handleViewLyrics = () => {
+    if (import.meta.env.DEV) {
+      console.log("Switching to Lyrics view");
+    }
+    setViewMode('lyrics');
+  };
+
   useEffect(() => {
     if (window.electronAPI?.getRecentlyPlayed && viewMode === 'history') {
       window.electronAPI.getRecentlyPlayed();
@@ -629,6 +642,52 @@ const NowPlaying = () => {
       prevCurrentlyPlayingUri.current = currentUri;
     }
   }, [currentlyPlaying?.uri, viewMode]);
+
+  useEffect(() => {
+    const fetchLyricsForTrack = async () => {
+      if (!currentlyPlaying) {
+        setLyrics(null);
+        setLyricsError(null);
+        prevLyricsTrackUri.current = null;
+        return;
+      }
+
+      const currentUri = currentlyPlaying.uri;
+      // Only fetch if the track URI has changed
+      if (currentUri === prevLyricsTrackUri.current) {
+        return;
+      }
+
+      setLyricsLoading(true);
+      setLyricsError(null);
+
+      try {
+        const title = currentlyPlaying.title || currentlyPlaying.name;
+        const artist = currentlyPlaying.artists
+          ? currentlyPlaying.artists.map((a) => a.name).join(', ')
+          : currentlyPlaying.artist;
+        const album = currentlyPlaying.album?.name || '';
+        const duration = currentlyPlaying.duration || 0;
+
+        const result = await fetchLyrics(title, artist, album, duration);
+
+        if (result.success) {
+          setLyrics(result.lyrics);
+        } else {
+          setLyricsError(result.error);
+        }
+      } catch (err) {
+        setLyricsError('Failed to load lyrics');
+        console.error('Lyrics fetch error:', err);
+      } finally {
+        setLyricsLoading(false);
+      }
+
+      prevLyricsTrackUri.current = currentUri;
+    };
+
+    fetchLyricsForTrack();
+  }, [currentlyPlaying?.uri]);
 
   const dedupedRecentlyPlayed = useMemo(() => {
     if (!recentlyPlayed || recentlyPlayed.length === 0) {
@@ -687,14 +746,22 @@ const NowPlaying = () => {
           <div className="queue-item" onClick={handleTogglePlayPause}>
             <div className="song-item">
               <SongArt
-                albumCoverUrl={getImageUrl(currentlyPlaying.album?.images?.[0]?.url || currentlyPlaying.album_cover || currentlyPlaying.albumArt)}
+                albumCoverUrl={getImageUrl(
+                  currentlyPlaying.album?.images?.[0]?.url ||
+                  currentlyPlaying.album_cover ||
+                  currentlyPlaying.albumArt
+                )}
                 title={currentlyPlaying.title || currentlyPlaying.name}
                 overlayIcon={isPlaying ? pauseIcon : playIcon}
               />
               <div className="song-details">
-                <p className="song-title">{currentlyPlaying.title || currentlyPlaying.name}</p>
+                <p className="song-title">
+                  {currentlyPlaying.title || currentlyPlaying.name}
+                </p>
                 <p className="song-artist truncate-text">
-                  {currentlyPlaying.artists ? currentlyPlaying.artists.map(a => a.name).join(', ') : (currentlyPlaying.artist || 'Unknown Artist')}
+                  {currentlyPlaying.artists
+                    ? currentlyPlaying.artists.map((a) => a.name).join(', ')
+                    : currentlyPlaying.artist || 'Unknown Artist'}
                 </p>
               </div>
               <div
@@ -721,12 +788,17 @@ const NowPlaying = () => {
               <div className="song-time-display">
                 <span className="song-progress-time">{displayedProgressLabel}</span>
                 /
-                <span className="song-duration-time">{currentlyPlaying?.formattedDuration || '0:00'}</span>
+                <span className="song-duration-time">
+                  {currentlyPlaying?.formattedDuration || '0:00'}
+                </span>
               </div>
             </div>
           </div>
         ) : (
-          <div className="no-playing-message"><span>Nothing is currently playing</span><div className="empty-message-spacer"></div></div>
+          <div className="no-playing-message">
+            <span>Nothing is currently playing</span>
+            <div className="empty-message-spacer"></div>
+          </div>
         )}
       </div>
 
@@ -743,27 +815,48 @@ const NowPlaying = () => {
         >
           History
         </h2>
+        <h2
+          className={`section-title ${viewMode === 'lyrics' ? 'active' : ''}`}
+          onClick={handleViewLyrics}
+        >
+          Lyrics
+        </h2>
       </div>
 
-       <div className="queue-section">
-         {viewMode === 'queue' ? (
-           queue.length > 0 ? (
-             <div className="queue-list">
-               {queue.map((song, index) => renderQueueItem(song, index))}
-             </div>
-           ) : (
-             <div className="queue-empty-message"><span>Queue is empty</span><div className="empty-message-spacer"></div></div>
-           )
-         ) : (
-           dedupedRecentlyPlayed.length > 0 ? (
-             <div className="queue-list">
-               {dedupedRecentlyPlayed.map((song, index) => renderQueueItem(song, index))}
-             </div>
-           ) : (
-             <div className="queue-empty-message"><span>No recently played tracks</span><div className="empty-message-spacer"></div></div>
-           )
-         )}
-       </div>
+      <div className="queue-section">
+        {viewMode === 'queue' ? (
+          queue.length > 0 ? (
+            <div className="queue-list">
+              {queue.map((song, index) => renderQueueItem(song, index))}
+            </div>
+          ) : (
+            <div className="queue-empty-message">
+              <span>Queue is empty</span>
+              <div className="empty-message-spacer"></div>
+            </div>
+          )
+        ) : viewMode === 'history' ? (
+          dedupedRecentlyPlayed.length > 0 ? (
+            <div className="queue-list">
+              {dedupedRecentlyPlayed.map((song, index) =>
+                renderQueueItem(song, index)
+              )}
+            </div>
+          ) : (
+            <div className="queue-empty-message">
+              <span>No recently played tracks</span>
+              <div className="empty-message-spacer"></div>
+            </div>
+          )
+        ) : (
+          <Lyrics 
+            currentlyPlaying={currentlyPlaying}
+            lyrics={lyrics}
+            loading={lyricsLoading}
+            error={lyricsError}
+          />
+        )}
+      </div>
       <SettingsModal
         isOpen={isSettingsOpen}
         onClose={() => setIsSettingsOpen(false)}
