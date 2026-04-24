@@ -2003,13 +2003,21 @@ label[for='money-display'] {
   color: rgba(255, 255, 255, 0.9);
   margin: 0px 0;
   padding: 4px 8px;
-  transition: color 0.2s ease;
+  transition: all 0.3s ease;
   white-space: normal;
   word-wrap: break-word;
 }
 
 .lyrics-line:hover {
-  color: rgba(255, 255, 255, 1);
+  color: rgba(255, 255, 255, 1) !important;
+  opacity: 1 !important;
+}
+
+.lyrics-line-active {
+  color: #ffffff !important;
+  font-weight: 700;
+  text-shadow: 0 0 15px rgba(255, 255, 255, 0.5), 0 0 30px rgba(255, 255, 255, 0.3);
+  transform: scale(1.05);
 }
 
 .lyrics-loading {

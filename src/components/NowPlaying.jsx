@@ -54,6 +54,7 @@ const NowPlaying = () => {
   const [viewMode, setViewMode] = useState('queue'); // 'queue', 'history', or 'lyrics'
   const [recentlyPlayed, setRecentlyPlayed] = useState([]);
   const [lyrics, setLyrics] = useState(null);
+  const [lyricsSynced, setLyricsSynced] = useState(false);
   const [lyricsLoading, setLyricsLoading] = useState(false);
   const [lyricsError, setLyricsError] = useState(null);
   const prevLyricsTrackUri = useRef(null);
@@ -671,10 +672,14 @@ const NowPlaying = () => {
 
         const result = await fetchLyrics(title, artist, album, duration);
 
+        console.log('Fetch lyrics result:', result);
+
         if (result.success) {
           setLyrics(result.lyrics);
+          setLyricsSynced(result.synced || false);
         } else {
           setLyricsError(result.error);
+          setLyricsSynced(false);
         }
       } catch (err) {
         setLyricsError('Failed to load lyrics');
@@ -849,11 +854,13 @@ const NowPlaying = () => {
             </div>
           )
         ) : (
-          <Lyrics 
+          <Lyrics
             currentlyPlaying={currentlyPlaying}
             lyrics={lyrics}
+            synced={lyricsSynced}
             loading={lyricsLoading}
             error={lyricsError}
+            currentTime={currentlyPlaying?.progressPercent ? currentlyPlaying.progressPercent * (currentlyPlaying.duration || 0) : 0}
           />
         )}
       </div>

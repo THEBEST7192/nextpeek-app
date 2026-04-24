@@ -35,22 +35,18 @@ export async function fetchLyrics(title, artist, album, duration) {
       return { success: false, error: 'Lyrics not found' };
     }
 
-    if (data.plainLyrics) {
-      return { success: true, lyrics: data.plainLyrics };
+    if (data.syncedLyrics) {
+      // Parse synced lyrics to keep timing information
+      const syncedLines = parseLRC(data.syncedLyrics, data.duration || 0);
+      if (syncedLines.length > 0) {
+        return { success: true, lyrics: syncedLines, synced: true };
+      }
+      // Fallback to plain lyrics if synced parsing fails
+      return { success: true, lyrics: data.plainLyrics || 'No lyrics available' };
     }
 
-    if (data.syncedLyrics) {
-      // Parse synced lyrics to plain text
-      const lines = data.syncedLyrics.split('\n');
-      const plainText = lines
-        .map(line => {
-          const match = line.match(/\](.*)$/);
-          return match ? match[1].trim() : '';
-        })
-        .filter(line => line && line !== '♪' && line !== '♫')
-        .join('\n');
-      
-      return { success: true, lyrics: plainText || 'No lyrics available' };
+    if (data.plainLyrics) {
+      return { success: true, lyrics: data.plainLyrics };
     }
 
     return { success: false, error: 'No lyrics available' };
@@ -92,11 +88,11 @@ function parseLRC(lyrics, durationSecs) {
             text = " ";
           }
 
-          result.push(text);
+          result.push({ text, time: startTime });
         }
       }
     }
   }
 
-  return result.filter(line => line && line !== " ").join('\n');
+  return result.filter(item => item.text && item.text !== " ");
 }
