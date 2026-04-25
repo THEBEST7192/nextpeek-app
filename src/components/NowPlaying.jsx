@@ -831,8 +831,10 @@ const NowPlaying = () => {
       <div className="queue-section">
         {viewMode === 'queue' ? (
           queue.length > 0 ? (
-            <div className="queue-list">
-              {queue.map((song, index) => renderQueueItem(song, index))}
+            <div className="queue-wrapper">
+              <div className="queue-scroll">
+                {queue.map((song, index) => renderQueueItem(song, index))}
+              </div>
             </div>
           ) : (
             <div className="queue-empty-message">
@@ -842,10 +844,12 @@ const NowPlaying = () => {
           )
         ) : viewMode === 'history' ? (
           dedupedRecentlyPlayed.length > 0 ? (
-            <div className="queue-list">
-              {dedupedRecentlyPlayed.map((song, index) =>
-                renderQueueItem(song, index)
-              )}
+            <div className="queue-wrapper">
+              <div className="queue-scroll">
+                {dedupedRecentlyPlayed.map((song, index) =>
+                  renderQueueItem(song, index)
+                )}
+              </div>
             </div>
           ) : (
             <div className="queue-empty-message">
@@ -854,14 +858,18 @@ const NowPlaying = () => {
             </div>
           )
         ) : (
-          <Lyrics
-            currentlyPlaying={currentlyPlaying}
-            lyrics={lyrics}
-            synced={lyricsSynced}
-            loading={lyricsLoading}
-            error={lyricsError}
-            currentTime={currentlyPlaying?.progressPercent ? currentlyPlaying.progressPercent * (currentlyPlaying.duration || 0) : 0}
-          />
+          <div className="queue-wrapper">
+            <div className="queue-scroll">
+              <Lyrics
+                currentlyPlaying={currentlyPlaying}
+                lyrics={lyrics}
+                synced={lyricsSynced}
+                loading={lyricsLoading}
+                error={lyricsError}
+                currentTime={currentlyPlaying?.progressPercent ? currentlyPlaying.progressPercent * (currentlyPlaying.duration || 0) : 0}
+              />
+            </div>
+          </div>
         )}
       </div>
       <SettingsModal

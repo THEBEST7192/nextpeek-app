@@ -17,7 +17,7 @@ html, body {
   box-sizing: border-box;
   max-width: 38rem;
   margin: auto;
-  padding: 71px 10px 10px;
+  padding: 71px 10px 0px;
 }
 
 
@@ -1433,7 +1433,7 @@ body[data-theme='customImage'][data-custom-image-text-color='white'] .control-bu
 
 .queue-section {
   margin-top: 8px;
-  margin-bottom: 8px;
+  margin-bottom: 0px;
 }
 
 .no-playing-message,
@@ -1983,18 +1983,46 @@ label[for='money-display'] {
   display: none !important;
 }
 
-/* Lyrics Styles */
-.lyrics-container {
-  padding: 16px;
-  max-height: 400px;
-  overflow-y: auto;
-  text-align: center;
+.now-playing {
+  display: flex;
+  flex-direction: column;
+  margin: 0 auto;
+  height: 92vh;
+  overflow: hidden;
 }
 
+.queue-section {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  flex: 1;
+  min-height: 0;
+  margin-bottom: 12px;
+}
+
+.queue-wrapper {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.queue-scroll {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  overflow-y: auto;
+}
+
+/* Lyrics Styles */
 .lyrics-content {
   display: flex;
   flex-direction: column;
   gap: 16px;
+  padding-bottom: 12px;
 }
 
 .lyrics-line {

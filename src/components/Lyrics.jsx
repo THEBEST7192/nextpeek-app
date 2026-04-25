@@ -89,32 +89,30 @@ const Lyrics = ({ currentlyPlaying, lyrics, synced, loading, error, currentTime 
   const lyricsArray = synced && Array.isArray(lyrics) ? lyrics : lyrics.split('\n');
 
   return (
-    <div className="queue-list">
-      <div className="queue-item">
-        <div className="song-item">
-          <div className="song-details lyrics-content" ref={containerRef}>
-            {lyricsArray.map((line, index) => {
-              const text = typeof line === 'object' ? line.text : line;
-              const time = typeof line === 'object' ? line.time : null;
-              const isActive = synced ? index === activeIndex : false;
-              const isBefore = synced && index < activeIndex;
-              const isAfter = synced && index > activeIndex;
-              return (
-                <p
-                  key={index}
-                  className={`song-title lyrics-line ${isActive ? 'lyrics-line-active' : ''}`}
-                  onClick={() => time !== null && handleLyricClick(time)}
-                  style={{
-                    cursor: time !== null ? 'pointer' : 'default',
-                    opacity: isActive ? 1 : isBefore ? 0.6 : isAfter ? 0.4 : 1,
-                    transition: 'opacity 0.3s ease'
-                  }}
-                >
-                  {text}
-                </p>
-              );
-            })}
-          </div>
+    <div className="queue-item">
+      <div className="song-item">
+        <div className="song-details lyrics-content" ref={containerRef}>
+          {lyricsArray.map((line, index) => {
+            const text = typeof line === 'object' ? line.text : line;
+            const time = typeof line === 'object' ? line.time : null;
+            const isActive = synced ? index === activeIndex : false;
+            const isBefore = synced && index < activeIndex;
+            const isAfter = synced && index > activeIndex;
+            return (
+              <p
+                key={index}
+                className={`song-title lyrics-line ${isActive ? 'lyrics-line-active' : ''}`}
+                onClick={() => time !== null && handleLyricClick(time)}
+                style={{
+                  cursor: time !== null ? 'pointer' : 'default',
+                  opacity: isActive ? 1 : isBefore ? 0.6 : isAfter ? 0.4 : 1,
+                  transition: 'opacity 0.3s ease'
+                }}
+              >
+                {text}
+              </p>
+            );
+          })}
         </div>
       </div>
     </div>
