@@ -645,6 +645,7 @@ const NowPlaying = () => {
   }, [currentlyPlaying?.uri, viewMode]);
 
   useEffect(() => {
+    let isCancelled = false;
     const fetchLyricsForTrack = async () => {
       if (!currentlyPlaying) {
         setLyrics(null);
@@ -672,26 +673,40 @@ const NowPlaying = () => {
 
         const result = await fetchLyrics(title, artist, album, duration);
 
-        console.log('Fetch lyrics result:', result);
+        // Only update state if fetch wasn't cancelled
+        if (!isCancelled) {
+          console.log('Fetch lyrics result:', result);
 
-        if (result.success) {
-          setLyrics(result.lyrics);
-          setLyricsSynced(result.synced || false);
-        } else {
-          setLyricsError(result.error);
-          setLyricsSynced(false);
+          if (result.success) {
+            setLyrics(result.lyrics);
+            setLyricsSynced(result.synced || false);
+          } else {
+            setLyricsError(result.error);
+            setLyricsSynced(false);
+          }
         }
       } catch (err) {
-        setLyricsError('Failed to load lyrics');
-        console.error('Lyrics fetch error:', err);
+        if (!isCancelled) {
+          setLyricsError('Failed to load lyrics');
+          console.error('Lyrics fetch error:', err);
+        }
       } finally {
-        setLyricsLoading(false);
+        if (!isCancelled) {
+          setLyricsLoading(false);
+        }
       }
 
-      prevLyricsTrackUri.current = currentUri;
+      if (!isCancelled) {
+        prevLyricsTrackUri.current = currentUri;
+      }
     };
 
     fetchLyricsForTrack();
+
+    // Cleanup function to cancel pending fetch when track changes
+    return () => {
+      isCancelled = true;
+    };
   }, [currentlyPlaying?.uri]);
 
   const dedupedRecentlyPlayed = useMemo(() => {
