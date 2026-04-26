@@ -292,18 +292,14 @@ body[data-theme='straightAlly'] .song-time-display {
 }
 
 body[data-theme='straightAlly'] .settings-clear-cache-button {
-  background-color: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.08);
   position: relative;
+  color: transparent;
 }
 
 body[data-theme='straightAlly'] .settings-clear-cache-button::before {
   content: 'Clear Cache';
   position: absolute;
-  left: 0;
-  top: 0;
-  width: 100%;
-  height: 100%;
+  inset: 0;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -312,12 +308,37 @@ body[data-theme='straightAlly'] .settings-clear-cache-button::before {
   background-clip: text;
   -webkit-text-fill-color: transparent;
   pointer-events: none;
-  font-size: 0.9rem;
-  font-weight: 600;
+  font: 600 0.9rem inherit;
 }
 
-body[data-theme='straightAlly'] .settings-clear-cache-button > * {
-  visibility: hidden;
+body[data-theme='straightAlly'] .toggle-slider {
+  background-color: #ccc !important;
+  opacity: 1 !important;
+  background-image: none !important;
+  -webkit-background-clip: initial !important;
+  background-clip: initial !important;
+  -webkit-text-fill-color: initial !important;
+  color: initial !important;
+}
+
+body[data-theme='straightAlly'] input:checked + .toggle-slider {
+  background-color: #1DB954 !important;
+  opacity: 1 !important;
+  background-image: none !important;
+  -webkit-background-clip: initial !important;
+  background-clip: initial !important;
+  -webkit-text-fill-color: initial !important;
+  color: initial !important;
+}
+
+body[data-theme='straightAlly'] .toggle-slider:before {
+  background-color: white !important;
+  opacity: 1 !important;
+  background-image: none !important;
+  -webkit-background-clip: initial !important;
+  background-clip: initial !important;
+  -webkit-text-fill-color: initial !important;
+  color: initial !important;
 }
 
 body[data-theme='trans'] #titlebar,
@@ -804,35 +825,6 @@ body[data-theme='asexual'] .settings-clear-cache-button:focus-visible {
   background: rgba(0, 0, 0, 0.08);
 }
 
-body[data-theme='customImage'][data-custom-image-text-color='black'] .settings-clear-cache-button {
-  background: rgba(0, 0, 0, 0.04);
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  color: #000000;
-}
-
-body[data-theme='customImage'][data-custom-image-text-color='black'] .settings-clear-cache-button:hover,
-body[data-theme='customImage'][data-custom-image-text-color='black'] .settings-clear-cache-button:focus-visible {
-  border-color: rgba(0, 0, 0, 0.2);
-  background: rgba(0, 0, 0, 0.08);
-}
-
-body[data-theme='customImage'][data-custom-image-text-color='white'] .settings-clear-cache-button {
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  color: #ffffff;
-}
-
-body[data-theme='customImage'][data-custom-image-text-color='white'] .settings-clear-cache-button:hover,
-body[data-theme='customImage'][data-custom-image-text-color='white'] .settings-clear-cache-button:focus-visible {
-  border-color: rgba(255, 255, 255, 0.2);
-  background: rgba(255, 255, 255, 0.08);
-}
-
-body[data-theme='straightAlly'] .settings-clear-cache-button:hover,
-body[data-theme='straightAlly'] .settings-clear-cache-button:focus-visible {
-  border-color: rgba(255, 255, 255, 0.2);
-  background-color: rgba(255, 255, 255, 0.08);
-}
 
 /* Invisible (Metal Gear refrence) scrollbar styling */
 ::-webkit-scrollbar {
@@ -1870,6 +1862,7 @@ body[data-theme='customImage'][data-custom-image-text-color='white'] .control-bu
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 12px;
   padding: 12px 16px;
+  color: rgba(255, 255, 255, 0.9);
   font-size: 0.9rem;
   font-weight: 600;
   cursor: pointer;
