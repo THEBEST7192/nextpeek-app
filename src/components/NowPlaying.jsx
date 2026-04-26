@@ -3,6 +3,7 @@ import SearchBar from './SearchBar';
 import SettingsModal from './SettingsModal';
 import Lyrics from './Lyrics';
 import { fetchLyrics } from '../services/lrclib';
+import { getCachedLyrics, setCachedLyrics } from '../services/lyricsCache';
 import playIcon from '../assets/icons/play.svg';
 import pauseIcon from '../assets/icons/pause.svg';
 import repeatIcon from '../assets/icons/controls/repeat.png';
@@ -639,8 +640,8 @@ const NowPlaying = () => {
       const currentUri = currentlyPlaying?.uri;
       if (currentUri && currentUri !== prevCurrentlyPlayingUri.current) {
         window.electronAPI.getRecentlyPlayed();
+        prevCurrentlyPlayingUri.current = currentUri;
       }
-      prevCurrentlyPlayingUri.current = currentUri;
     }
   }, [currentlyPlaying?.uri, viewMode]);
 
@@ -660,7 +661,7 @@ const NowPlaying = () => {
         return;
       }
 
-      setLyricsLoading(true);
+      setLyricsLoading(false);
       setLyricsError(null);
 
       try {
@@ -671,6 +672,19 @@ const NowPlaying = () => {
         const album = currentlyPlaying.album?.name || '';
         const duration = currentlyPlaying.duration || 0;
 
+        // Check cache first
+        const cached = getCachedLyrics(title, artist);
+        if (cached) {
+          if (!isCancelled) {
+            setLyrics(cached.lyrics);
+            setLyricsSynced(cached.synced || false);
+          }
+          prevLyricsTrackUri.current = currentUri;
+          return;
+        }
+
+        // Only show loading state if fetching from API
+        setLyricsLoading(true);
         const result = await fetchLyrics(title, artist, album, duration);
 
         // Only update state if fetch wasn't cancelled
@@ -680,6 +694,8 @@ const NowPlaying = () => {
           if (result.success) {
             setLyrics(result.lyrics);
             setLyricsSynced(result.synced || false);
+            // Cache the fetched lyrics
+            setCachedLyrics(title, artist, result.lyrics, result.synced || false);
           } else {
             setLyricsError(result.error);
             setLyricsSynced(false);
@@ -706,6 +722,7 @@ const NowPlaying = () => {
     // Cleanup function to cancel pending fetch when track changes
     return () => {
       isCancelled = true;
+      setLyricsLoading(false);
     };
   }, [currentlyPlaying?.uri]);
 

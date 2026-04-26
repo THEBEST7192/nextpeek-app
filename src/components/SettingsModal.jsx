@@ -1,7 +1,10 @@
-import React, { useEffect, useCallback } from 'react';
+import React, { useEffect, useCallback, useState } from 'react';
 import closeIcon from '../assets/icons/close.svg';
+import { getLyricsCacheSizeFormatted, clearLyricsCache } from '../services/lyricsCache';
 
 const SettingsModal = ({ isOpen, onClose, currentTheme, onThemeChange, onUploadImage, customImageTextColor, onCustomImageTextColorChange, alwaysOnTopWhenPinned, alwaysOnTopWhenUnpinned, onAlwaysOnTopWhenPinnedChange, onAlwaysOnTopWhenUnpinnedChange }) => {
+  const [cacheSize, setCacheSize] = useState('0 B');
+
   const handleClose = useCallback(() => {
     if (onClose) {
       onClose();
@@ -21,10 +24,19 @@ const SettingsModal = ({ isOpen, onClose, currentTheme, onThemeChange, onUploadI
 
     window.addEventListener('keydown', handleKeyDown);
 
+    // Update cache size when modal opens
+    setCacheSize(getLyricsCacheSizeFormatted());
+
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
   }, [isOpen, handleClose]);
+
+  const handleClearCache = useCallback(() => {
+    if (clearLyricsCache()) {
+      setCacheSize('0 B');
+    }
+  }, []);
 
   const handleOverlayMouseDown = (event) => {
     if (event.target === event.currentTarget) {
@@ -185,6 +197,28 @@ const SettingsModal = ({ isOpen, onClose, currentTheme, onThemeChange, onUploadI
                   <span className="toggle-slider"></span>
                 </label>
               </div>
+            </div>
+          </section>
+
+          <section className="settings-section">
+            <div className="settings-section__header">
+              <h3>Lyrics Cache</h3>
+              <p>Manage cached lyrics data.</p>
+            </div>
+            <div className="settings-theme-options">
+              <div className="settings-theme-option">
+                <div className="settings-option__info">
+                  <span className="settings-option__title">Cache Size</span>
+                  <span className="settings-option__description">{cacheSize}</span>
+                </div>
+              </div>
+              <button
+                type="button"
+                className="settings-clear-cache-button"
+                onClick={handleClearCache}
+              >
+                Clear Cache
+              </button>
             </div>
           </section>
         </div>
