@@ -8,6 +8,9 @@ html, body {
     sans-serif;
   background-color: rgba(18, 18, 18, 0.8);
   color: #ffffff;
+
+  transform: translateZ(0);
+  will-change: transform;
 }
 
 #content {
@@ -1610,6 +1613,9 @@ body[data-theme='customImage'][data-custom-image-text-color='white'] .control-bu
   border-radius: 10px;
   object-fit: cover;
   display: block;
+
+  transform: translateZ(0);
+  will-change: transform;
 }
 
 .song-art-placeholder {

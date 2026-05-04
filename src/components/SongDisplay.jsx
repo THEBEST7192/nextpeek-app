@@ -4,6 +4,9 @@ const getImageUrl = (uri) => {
   if (uri && uri.startsWith('spotify:image:')) {
     return `https://i.scdn.co/image/${uri.split(':').pop()}`;
   }
+  if (uri && uri.startsWith('spotify:localfileimage:')) {
+    return null;
+  }
   return uri;
 };
 

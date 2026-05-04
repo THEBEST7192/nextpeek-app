@@ -23,6 +23,15 @@ export function setCachedLyrics(title, artist, lyrics, synced) {
   try {
     const cache = JSON.parse(localStorage.getItem(LYRICS_CACHE_KEY) || '{}');
     const key = generateCacheKey(title, artist);
+    
+    // Cleanup old entries if cache is too large (limit to 500 entries)
+    const entries = Object.entries(cache);
+    if (entries.length >= 500) {
+      // Remove oldest 20 entries
+      const sortedEntries = entries.sort(([,a], [,b]) => a.timestamp - b.timestamp);
+      sortedEntries.slice(0, 20).forEach(([oldKey]) => delete cache[oldKey]);
+    }
+    
     cache[key] = {
       lyrics,
       synced,

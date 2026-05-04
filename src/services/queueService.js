@@ -4,6 +4,12 @@
 import http from 'node:http';
 import { BrowserWindow } from 'electron';
 
+// Simple request throttling
+let lastUpdateTime = 0;
+const MIN_UPDATE_INTERVAL = 500; // 500ms between updates to handle both focused/unfocused
+let pendingUpdate = null;
+let isProcessingUpdate = false;
+
 const normalizeRepeatMode = (mode) => {
   const numeric = Number(mode);
   return numeric === 1 || numeric === 2 ? numeric : 0;
@@ -29,6 +35,105 @@ let recentlyPlayedTracks = [];
 
 // Store pending playlist requests
 let pendingPlaylistRequests = [];
+
+// Memory management: limit cache sizes
+const MAX_QUEUE_HISTORY = 50;
+const MAX_PLAYLIST_CACHE = 100;
+
+// Simple update processor - just throttle and process
+const processUpdate = (data) => {
+  if (isProcessingUpdate) {
+    pendingUpdate = data;
+    return;
+  }
+
+  isProcessingUpdate = true;
+  const now = Date.now();
+  
+  // Simple throttling
+  if (now - lastUpdateTime < MIN_UPDATE_INTERVAL) {
+    setTimeout(() => {
+      isProcessingUpdate = false;
+      if (pendingUpdate) {
+        const nextData = pendingUpdate;
+        pendingUpdate = null;
+        processUpdate(nextData);
+      }
+    }, MIN_UPDATE_INTERVAL - (now - lastUpdateTime));
+    return;
+  }
+
+  try {
+    const normalizedRepeatMode = normalizeRepeatMode(
+      data.repeatMode ?? data.nowPlaying?.repeatMode
+    );
+    const normalizedShuffle = typeof data.shuffle === 'boolean'
+      ? data.shuffle
+      : Boolean(data.nowPlaying?.shuffle);
+
+    currentQueue = {
+      ...data,
+      repeatMode: normalizedRepeatMode,
+      shuffle: normalizedShuffle,
+    };
+    
+    if (data.history) {
+      recentlyPlayedTracks = data.history.slice(0, MAX_QUEUE_HISTORY);
+    }
+
+    if (queueUpdateCallback) {
+      queueUpdateCallback('queue', currentQueue);
+      if (data.history) {
+        queueUpdateCallback('history', data.history);
+      }
+    }
+    
+    // Update play state if available
+    if (currentQueue.nowPlaying && currentQueue.nowPlaying.isPlaying !== undefined) {
+      rendererWindow?.webContents.emit('external-play-state-changed', currentQueue.nowPlaying.isPlaying);
+    }
+    
+    lastUpdateTime = now;
+  } finally {
+    isProcessingUpdate = false;
+    
+    // Process any pending update
+    if (pendingUpdate) {
+      const nextData = pendingUpdate;
+      pendingUpdate = null;
+      setTimeout(() => processUpdate(nextData), MIN_UPDATE_INTERVAL);
+    }
+  }
+};
+
+// Aggressive cleanup function to prevent RAM buildup
+export function cleanupQueueData() {
+  // Force clear arrays periodically
+  if (recentlyPlayedTracks.length > 20) {
+    recentlyPlayedTracks = recentlyPlayedTracks.slice(0, 20);
+  }
+  
+  if (userPlaylists.length > 50) {
+    userPlaylists = userPlaylists.slice(0, 50);
+  }
+  
+  // Clear all pending requests
+  pendingPlaylistRequests.forEach(request => {
+    if (request.timeout) {
+      clearTimeout(request.timeout);
+    }
+  });
+  pendingPlaylistRequests = [];
+  
+  // Clear throttled update data
+  pendingUpdate = null;
+  isProcessingUpdate = false;
+  
+  // Clear current queue if it's getting too large
+  if (currentQueue.queue && currentQueue.queue.length > 100) {
+    currentQueue.queue = currentQueue.queue.slice(0, 100);
+  }
+}
 
 let queueUpdateCallback = null;
 
@@ -67,37 +172,12 @@ export function startQueueServer(mainWindow) {
       req.on('end', () => {
         try {
           const data = JSON.parse(body);
-          const normalizedRepeatMode = normalizeRepeatMode(
-            data.repeatMode ?? data.nowPlaying?.repeatMode
-          );
-          const normalizedShuffle = typeof data.shuffle === 'boolean'
-            ? data.shuffle
-            : Boolean(data.nowPlaying?.shuffle);
-
-          currentQueue = {
-            ...data,
-            repeatMode: normalizedRepeatMode,
-            shuffle: normalizedShuffle,
-          };
+          
+          // Use throttled processing instead of immediate processing
+          processUpdate(data);
+          
           if (import.meta.env.DEV) {
-            console.log('Queue updated:', currentQueue);
-          }
-          
-          if (data.history) {
-            recentlyPlayedTracks = data.history;
-          }
-
-          if (queueUpdateCallback) {
-            queueUpdateCallback('queue', currentQueue);
-            if (data.history) {
-              queueUpdateCallback('history', data.history);
-            }
-          }
-          
-          // Update play state if available
-          if (currentQueue.nowPlaying && currentQueue.nowPlaying.isPlaying !== undefined) {
-            // Update the main process about external play state changes
-            rendererWindow?.webContents.emit('external-play-state-changed', currentQueue.nowPlaying.isPlaying);
+            console.log('Queue update received (throttled):', data.nowPlaying?.title);
           }
           
           res.writeHead(200, { 'Content-Type': 'application/json' });
@@ -135,7 +215,7 @@ export function startQueueServer(mainWindow) {
         pendingPlaylistRequests = pendingPlaylistRequests.filter(request => request.res !== res);
       }, 2000);
       
-      pendingPlaylistRequests.push({ query, res, timeout });
+      pendingPlaylistRequests.push({ query, res, timeout, timestamp: Date.now() });
     }
     // Handle playlist response from Spotify bridge
     else if (req.url === '/api/playlistsResponse' && req.method === 'POST') {
@@ -148,7 +228,7 @@ export function startQueueServer(mainWindow) {
       req.on('end', () => {
         try {
           const data = JSON.parse(body);
-          userPlaylists = data.playlists;
+          userPlaylists = data.playlists.slice(0, MAX_PLAYLIST_CACHE);
           if (import.meta.env.DEV) {
             console.log('Playlists received:', userPlaylists.length);
           }
@@ -239,6 +319,9 @@ export function getRecentlyPlayedTracks() {
 }
 
 export function getRecentlyPlayed() {
+  // Cleanup data before fetching
+  cleanupQueueData();
+  
   pendingCommand = { action: 'getRecentlyPlayed' };
   if (import.meta.env.DEV) {
     console.log('Command set: getRecentlyPlayed');

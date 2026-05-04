@@ -66,6 +66,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   setShuffleState: (state) => ipcRenderer.invoke('set-shuffle-state', state),
   setRepeatMode: (mode) => ipcRenderer.invoke('set-repeat-mode', mode),
   getRecentlyPlayed: () => ipcRenderer.invoke('get-recently-played'),
+  extractAudioMetadata: (filePath) => ipcRenderer.invoke('extract-audio-metadata', filePath),
   onRecentlyPlayedUpdated: (callback) => {
     ipcRenderer.on('recently-played-updated', callback);
     return () => ipcRenderer.removeListener('recently-played-updated', callback);

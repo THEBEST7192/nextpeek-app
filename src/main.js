@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, screen, shell, dialog, Menu } from 'electron';
+import { app, BrowserWindow, ipcMain, screen, shell, dialog, Menu, protocol } from 'electron';
 import path from 'node:path';
 import started from 'electron-squirrel-startup';
 import crypto from 'node:crypto';
@@ -6,12 +6,26 @@ import dotenv from 'dotenv';
 import http from 'node:http';
 import { promises as fs } from 'node:fs';
 import { pathToFileURL } from 'node:url';
+import { net } from 'electron';
+import { parseFile } from 'music-metadata';
 
 // Import queue service
 import { startQueueServer, sendCommand, getCurrentQueue, setQueueWindow, getRecentlyPlayed, getRecentlyPlayedTracks, onQueueUpdate } from './services/queueService.js';
 import { initPongService, closePong, relayPongData } from './services/pongService.js';
 
 dotenv.config();
+
+// Register custom protocol for local file access
+protocol.registerSchemesAsPrivileged([
+  {
+    scheme: 'localfile',
+    privileges: {
+      secure: true,
+      standard: true,
+      supportFetchAPI: true,
+    },
+  },
+]);
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (started) {
@@ -845,6 +859,29 @@ app.whenReady().then(async () => {
     Menu.setApplicationMenu(null);
   }
 
+  // Register custom protocol handler for local files
+  protocol.registerBufferProtocol('localfile', (request, callback) => {
+    const filePath = request.url.replace('localfile:///', '');
+    const decodedPath = decodeURIComponent(filePath);
+    fs.readFile(decodedPath)
+      .then(data => {
+        const extension = path.extname(decodedPath).toLowerCase();
+        const mimeType = {
+          '.jpg': 'image/jpeg',
+          '.jpeg': 'image/jpeg',
+          '.png': 'image/png',
+          '.gif': 'image/gif',
+          '.webp': 'image/webp',
+          '.bmp': 'image/bmp',
+        }[extension] || 'application/octet-stream';
+        callback({ data, mimeType });
+      })
+      .catch(error => {
+        console.error('Failed to read local file:', error);
+        callback({ error: -2 });
+      });
+  });
+
   settingsFilePath = path.join(app.getPath('userData'), 'settings.json');
   await loadSettings();
 
@@ -868,6 +905,37 @@ app.whenReady().then(async () => {
 
   // Start mouse tracking for sidebar functionality
   startMouseTracking();
+  
+  // Aggressive memory cleanup to prevent RAM buildup
+  setInterval(() => {
+    if (queueServer) {
+      // Import cleanup function and run it
+      import('./services/queueService.js').then(({ cleanupQueueData }) => {
+        cleanupQueueData();
+      }).catch(err => console.error('Failed to cleanup queue data:', err));
+    }
+    
+    // Force garbage collection if available
+    if (global.gc) {
+      global.gc();
+    }
+    
+    // Clear any accumulated data in renderer
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.executeJavaScript(`
+        // Clear any accumulated arrays/objects
+        if (window.failedAlbumCoverUrls) {
+          if (window.failedAlbumCoverUrls.size > 100) {
+            window.failedAlbumCoverUrls.clear();
+          }
+        }
+        // Clear any other large objects
+        if (window.cachedData) {
+          window.cachedData = {};
+        }
+      `).catch(() => {});
+    }
+  }, 10000); // Cleanup every 10 seconds
 
   // Register IPC handlers
   ipcMain.handle('toggle-pin', () => {
@@ -1169,4 +1237,55 @@ ipcMain.on('spotify-login', () => {
 
 ipcMain.handle('spotify-auth-status', async () => {
   return { accessToken: spotifyAccessToken, refreshToken: spotifyRefreshToken };
+});
+
+ipcMain.handle('extract-audio-metadata', async (event, filePath) => {
+  try {
+    // Only process actual local files
+    if (!filePath || !filePath.startsWith('spotify:localfileimage:')) {
+      throw new Error('Invalid file path: not a local file');
+    }
+    
+    let decodedPath = filePath;
+    
+    // Decode Spotify local file image URI format
+    const encodedPath = filePath.split(':').pop();
+    try {
+      decodedPath = decodeURIComponent(encodedPath);
+    } catch (error) {
+      decodedPath = encodedPath;
+    }
+    
+    // Validate that the decoded path looks like a file path
+    if (!decodedPath.includes(':') && !decodedPath.startsWith('/')) {
+      throw new Error('Invalid file path format');
+    }
+    
+    // Check if file exists
+    await fs.access(decodedPath);
+    
+    // Extract metadata using music-metadata
+    const metadata = await parseFile(decodedPath);
+    
+    // Extract album cover if available (limit size to prevent memory issues)
+    let albumCover = null;
+    if (metadata.common.picture && metadata.common.picture.length > 0) {
+      const picture = metadata.common.picture[0];
+      // Limit album cover size to 2MB to prevent memory issues
+      if (picture.data.length <= 2 * 1024 * 1024) {
+        albumCover = picture.data;
+      }
+    }
+    
+    // Return only essential data to reduce memory usage
+    return {
+      title: metadata.common.title,
+      artist: metadata.common.artist,
+      album: metadata.common.album,
+      duration: metadata.format.duration ? Math.floor(metadata.format.duration * 1000) : 0,
+      albumCover: albumCover
+    };
+  } catch (error) {
+    throw new Error(`Failed to extract metadata: ${error.message}`);
+  }
 });

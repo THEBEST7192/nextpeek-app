@@ -4,6 +4,8 @@ import SettingsModal from './SettingsModal';
 import Lyrics from './Lyrics';
 import { fetchLyrics } from '../services/lrclib';
 import { getCachedLyrics, setCachedLyrics } from '../services/lyricsCache';
+import { useAlbumCover } from '../hooks/useAlbumCover';
+import { AlbumCoverService } from '../services/albumCoverService';
 import playIcon from '../assets/icons/play.svg';
 import pauseIcon from '../assets/icons/pause.svg';
 import repeatIcon from '../assets/icons/controls/repeat.png';
@@ -67,14 +69,249 @@ const NowPlaying = () => {
   const progressHitboxRef = useRef(null);
   const progressBarRef = useRef(null);
   const manualSeekTimeoutRef = useRef(null);
+  const queueProcessingRef = useRef(null);
+  const prevQueueRef = useRef(null);
 
   const [isSeeking, setIsSeeking] = useState(false);
+
+  // Helper function to compare sets
+  const setsEqual = (a, b) => {
+    if (a.size !== b.size) return false;
+    for (let item of a) {
+      if (!b.has(item)) return false;
+    }
+    return true;
+  };
   const [pendingSeekPercent, setPendingSeekPercent] = useState(null);
   const [manualSeekPercent, setManualSeekPercent] = useState(null);
+
+  // Use album cover hook for extracting metadata from local files
+  const { albumCover: extractedAlbumCover, metadata: extractedMetadata, isLoading: isAlbumCoverLoading } = useAlbumCover(currentlyPlaying);
+
+  // Cache for queue item album covers with no limits
+  const [queueAlbumCovers, setQueueAlbumCovers] = useState(new Map());
+  const [pendingRequests, setPendingRequests] = useState(new Set()); // Track ongoing requests
+  const [isProcessingPaused, setIsProcessingPaused] = useState(false); // Throttle processing
+  const [allCoversFetched, setAllCoversFetched] = useState(false); // Stop processing when complete
+
+  // Get album cover for queue items with memory optimization and deduplication
+  const getQueueItemAlbumCover = useCallback(async (song) => {
+    if (!song || !song.album_cover) return null;
+    
+    // Only process actual local files, not Spotify image URLs
+    if (!song.album_cover.startsWith('spotify:localfileimage:')) {
+      return null;
+    }
+    
+    const cacheKey = song.album_cover;
+    
+    // Return cached result if available
+    const currentCache = queueAlbumCovers;
+    if (currentCache.has(cacheKey)) {
+      return currentCache.get(cacheKey);
+    }
+
+    // Prevent duplicate requests
+    const currentPending = pendingRequests;
+    if (currentPending.has(cacheKey)) {
+      return null; // Request already in progress
+    }
+
+    try {
+      // Mark request as pending
+      setPendingRequests(prev => new Set(prev).add(cacheKey));
+      
+      console.log(`Extracting cover for: ${song.name || song.title}`);
+      
+      const result = await AlbumCoverService.extractAlbumCover(song.album_cover);
+      if (result.success && result.resizedImageUrl) {
+        // Use the already cached 64x64 image from global cache
+        const coverUrl = result.resizedImageUrl;
+        
+        // No cache size limits - cache everything for performance
+        setQueueAlbumCovers(prev => {
+          const newCache = new Map(prev);
+          newCache.set(cacheKey, coverUrl);
+          return newCache;
+        });
+        
+        return coverUrl;
+      } else {
+        console.log(`Failed to extract cover for: ${song.name || song.title}`);
+      }
+    } catch (error) {
+      console.error(`Error processing ${song.name || song.title}:`, error);
+    } finally {
+      // Remove from pending requests
+      setPendingRequests(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(cacheKey);
+        return newSet;
+      });
+    }
+    
+    return null;
+  }, []); // Remove dependencies to prevent recreation
+
+  // Cleanup cache on unmount to prevent memory leaks
+  useEffect(() => {
+    return () => {
+      setQueueAlbumCovers(new Map());
+    };
+  }, []);
 
   useEffect(() => {
     viewModeRef.current = viewMode;
   }, [viewMode]);
+
+  // Responsive queue processing trigger (ensure new songs get processed)
+  useEffect(() => {
+    if (!queue || queue.length === 0) {
+      return;
+    }
+    
+    // Always reset completion when queue changes to ensure new songs are processed
+    const currentQueueKeys = new Set(queue.map(s => s.uri).filter(Boolean));
+    const prevQueueKeys = prevQueueRef.current;
+    
+    if (!prevQueueKeys || !setsEqual(currentQueueKeys, prevQueueKeys)) {
+      setAllCoversFetched(false);
+      prevQueueRef.current = currentQueueKeys;
+      console.log('Queue changed, resetting completion state for new songs');
+    }
+    
+    // Clear any existing timeout
+    if (queueProcessingRef.current) {
+      clearTimeout(queueProcessingRef.current);
+    }
+    
+    // Set new timeout with shorter delay for responsiveness
+    queueProcessingRef.current = setTimeout(() => {
+      queueProcessingRef.current = null;
+    }, 100); // Much shorter delay for new song responsiveness
+    
+    // Cleanup on unmount
+    return () => {
+      if (queueProcessingRef.current) {
+        clearTimeout(queueProcessingRef.current);
+        queueProcessingRef.current = null;
+      }
+    };
+  }, [queue?.map(s => s.uri).join(',')]); // Trigger when actual queue content changes
+
+  // Aggressive queue processing that actually works
+  useEffect(() => {
+    if (!queue || queue.length === 0) return;
+    
+    console.log(`Queue processing triggered: ${queue.length} songs, cache size: ${queueAlbumCovers.size}`);
+    
+    // Find ALL local files that need processing
+    const localFiles = queue.filter(song => 
+      song.album_cover && song.album_cover.startsWith('spotify:localfileimage:')
+    );
+    
+    console.log(`Found ${localFiles.length} local files`);
+    
+    if (localFiles.length === 0) {
+      setAllCoversFetched(true);
+      return;
+    }
+    
+    // Process ALL uncached files - no limits whatsoever
+    const uncachedFiles = localFiles.filter(song => 
+      !queueAlbumCovers.has(song.album_cover) &&
+      !pendingRequests.has(song.album_cover)
+    );
+    
+    console.log(`Need to process ${uncachedFiles.length} uncached files`);
+    
+    if (uncachedFiles.length === 0) {
+      setAllCoversFetched(true);
+      return;
+    }
+    
+    // Process ALL files at once - no batching limits
+    const filesToProcess = uncachedFiles; // Process everything!
+    
+    console.log(`Processing ALL ${filesToProcess.length} files immediately`);
+    
+    // Process files aggressively in parallel
+    const processFiles = async () => {
+      const batchPromises = filesToProcess.map(async (song, index) => {
+        console.log(`Starting processing for song ${index + 1}: ${song.name || song.title}`);
+        try {
+          const result = await getQueueItemAlbumCover(song);
+          console.log(`Completed processing for song ${index + 1}: ${song.name || song.title}`);
+          return result;
+        } catch (error) {
+          console.error(`Error processing song ${index + 1}:`, error);
+          return null;
+        }
+      });
+      
+      const results = await Promise.allSettled(batchPromises);
+      const successful = results.filter(r => r.status === 'fulfilled').length;
+      console.log(`Batch completed: ${successful}/${filesToProcess.length} successful`);
+    };
+    
+    // Start processing immediately
+    processFiles();
+    
+    // Keep processing until everything is done
+    const interval = setInterval(() => {
+      const remainingUncached = queue.filter(song => 
+        song.album_cover && 
+        song.album_cover.startsWith('spotify:localfileimage:') &&
+        !queueAlbumCovers.has(song.album_cover) &&
+        !pendingRequests.has(song.album_cover)
+      );
+      
+      if (remainingUncached.length === 0) {
+        console.log('All files processed successfully!');
+        setAllCoversFetched(true);
+        clearInterval(interval);
+      } else {
+        console.log(`Still ${remainingUncached.length} files remaining, continuing...`);
+        processFiles();
+      }
+    }, 1000);
+    
+    return () => clearInterval(interval);
+  }, [queue]); // Trigger on any queue change
+
+  
+  // Unlimited history processing
+  useEffect(() => {
+    if (!recentlyPlayed || recentlyPlayed.length === 0 || isProcessingPaused || allCoversFetched) {
+      return;
+    }
+    
+    // Get all uncached local history files - no limits
+    const uncachedHistoryFiles = recentlyPlayed.filter(song => 
+      song.album_cover && 
+      song.album_cover.startsWith('spotify:localfileimage:') &&
+      !queueAlbumCovers.has(song.album_cover) &&
+      !pendingRequests.has(song.album_cover)
+    ).slice(0, 5); // Process up to 5 history items for efficiency
+    
+    if (uncachedHistoryFiles.length === 0) {
+      return;
+    }
+    
+    console.log(`Processing ${uncachedHistoryFiles.length} history items (cache size: ${queueAlbumCovers.size})`);
+    
+    // Process history files in parallel
+    const processHistory = async () => {
+      const batchPromises = uncachedHistoryFiles.map(async (song) => {
+        if (isProcessingPaused || allCoversFetched) return null;
+        return await getQueueItemAlbumCover(song);
+      });
+      
+      await Promise.allSettled(batchPromises);
+    };
+    
+    processHistory();
+  }, [recentlyPlayed?.length, queueAlbumCovers.size]); // Trigger when history or cache changes
 
   const getPercentFromClientX = useCallback((clientX) => {
     const rect = progressBarRef.current?.getBoundingClientRect();
@@ -262,53 +499,57 @@ const NowPlaying = () => {
 
   useEffect(() => {
     if (window.electronAPI && window.electronAPI.onQueueUpdated) {
+      let lastUpdateData = null;
+      let updateTimeout = null;
+      
       const handleQueueUpdate = (event, data) => {
-        if (import.meta.env.DEV) {
-          console.log('onQueueUpdated received data:', {
-            duration: data.nowPlaying?.duration,
-            progress: data.nowPlaying?.progress,
-            formattedDuration: data.nowPlaying?.formattedDuration,
-            formattedProgress: data.nowPlaying?.formattedProgress,
-            progressPercent: data.nowPlaying?.progressPercent,
-          });
-        }
-        if (data.nowPlaying && data.nowPlaying.title) {
-          setCurrentlyPlaying(data.nowPlaying);
-          if (typeof data.nowPlaying.isPlaying === 'boolean') {
-            setIsPlaying(data.nowPlaying.isPlaying);
-            lastSpotifyState.current = data.nowPlaying.isPlaying;
-          }
-        } else {
-          setCurrentlyPlaying(null);
-          setIsPlaying(false);
-          lastSpotifyState.current = null;
-        }
-        if (typeof data.shuffle === 'number') {
-          if (!manualControlTimeout.current?.shuffle) {
-            setShuffleMode(data.shuffle);
-          }
-        } else if (typeof data.nowPlaying?.shuffle === 'number') {
-          if (!manualControlTimeout.current?.shuffle) {
-            setShuffleMode(data.nowPlaying.shuffle);
-          }
-        }
 
-        const incomingRepeatMode = normalizeRepeatMode(
-          data.repeatMode ?? data.nowPlaying?.repeatMode
-        );
-        if (!manualControlTimeout.current?.repeat) {
-          setRepeatMode(incomingRepeatMode);
+        if (updateTimeout) {
+          clearTimeout(updateTimeout);
         }
+        
+        updateTimeout = setTimeout(() => {
+          if (data.nowPlaying && data.nowPlaying.title) {
+            setCurrentlyPlaying(data.nowPlaying);
+            if (typeof data.nowPlaying.isPlaying === 'boolean') {
+              setIsPlaying(data.nowPlaying.isPlaying);
+              lastSpotifyState.current = data.nowPlaying.isPlaying;
+            }
+          } else {
+            setCurrentlyPlaying(null);
+            setIsPlaying(false);
+            lastSpotifyState.current = null;
+          }
+          if (typeof data.shuffle === 'number') {
+            if (!manualControlTimeout.current?.shuffle) {
+              setShuffleMode(data.shuffle);
+            }
+          } else if (typeof data.nowPlaying?.shuffle === 'number') {
+            if (!manualControlTimeout.current?.shuffle) {
+              setShuffleMode(data.nowPlaying.shuffle);
+            }
+          }
 
-        const delimiterIndex = data.queue.findIndex(song => song.uri === 'spotify:delimiter');
-        const filteredQueue = delimiterIndex >= 0 ? data.queue.slice(0, delimiterIndex) : data.queue;
-        setQueue(filteredQueue);
+          const incomingRepeatMode = normalizeRepeatMode(
+            data.repeatMode ?? data.nowPlaying?.repeatMode
+          );
+          if (!manualControlTimeout.current?.repeat) {
+            setRepeatMode(incomingRepeatMode);
+          }
+
+          const delimiterIndex = data.queue.findIndex(song => song.uri === 'spotify:delimiter');
+          const filteredQueue = delimiterIndex >= 0 ? data.queue.slice(0, delimiterIndex) : data.queue;
+          setQueue(filteredQueue);
+        }, 100);
       };
 
       window.electronAPI.onQueueUpdated(handleQueueUpdate);
 
       // Clean up listener
       return () => {
+        if (updateTimeout) {
+          clearTimeout(updateTimeout);
+        }
         if (window.electronAPI.removeQueueUpdatedListener) {
           window.electronAPI.removeQueueUpdatedListener();
         }
@@ -483,6 +724,10 @@ const NowPlaying = () => {
     if (uri && uri.startsWith('spotify:image:')) {
       return `https://i.scdn.co/image/${uri.split(':').pop()}`;
     }
+    if (uri && uri.startsWith('spotify:localfileimage:')) {
+      // Don't return localfile:// URLs - let the music-metadata system handle these
+      return null;
+    }
     return uri;
   };
 
@@ -536,7 +781,23 @@ const NowPlaying = () => {
   const renderQueueItem = (song, index) => {
     if (!song) return null;
 
-    const albumCoverUrl = getImageUrl(song.album?.images?.[0]?.url || song.album_cover || song.albumArt);
+    // Handle album covers for both local and regular Spotify songs
+    let albumCoverUrl = null;
+    if (song.album_cover && song.album_cover.startsWith('spotify:localfileimage:')) {
+      // Local file - use our extracted and cached version
+      const cacheKey = song.album_cover;
+      if (queueAlbumCovers.has(cacheKey)) {
+        albumCoverUrl = queueAlbumCovers.get(cacheKey);
+      } else {
+        // Debug: log when cache miss occurs
+        console.log(`Cache miss for: ${song.name || song.title} (cache size: ${queueAlbumCovers.size})`);
+      }
+      // Don't trigger extraction during render - let the queue processing handle it
+    } else {
+      // Regular Spotify song - use original approach for spotify:image: URLs
+      albumCoverUrl = getImageUrl(song.album?.images?.[0]?.url || song.album_cover || song.albumArt);
+    }
+    
     const title = song.name || song.title || 'Unknown Title';
     const artist = song.artists ? song.artists.map(a => a.name).join(', ') : (song.artist || 'Unknown Artist');
 
@@ -783,22 +1044,29 @@ const NowPlaying = () => {
           <div className="queue-item" onClick={handleTogglePlayPause}>
             <div className="song-item">
               <SongArt
-                albumCoverUrl={getImageUrl(
-                  currentlyPlaying.album?.images?.[0]?.url ||
-                  currentlyPlaying.album_cover ||
-                  currentlyPlaying.albumArt
-                )}
-                title={currentlyPlaying.title || currentlyPlaying.name}
+                albumCoverUrl={
+                  extractedAlbumCover || 
+                  (currentlyPlaying.album_cover && currentlyPlaying.album_cover.startsWith('spotify:localfileimage:') 
+                    ? null 
+                    : getImageUrl(
+                        currentlyPlaying.album?.images?.[0]?.url ||
+                        currentlyPlaying.album_cover ||
+                        currentlyPlaying.albumArt
+                      )
+                  )
+                }
+                title={extractedMetadata?.title || currentlyPlaying.title || currentlyPlaying.name}
                 overlayIcon={isPlaying ? pauseIcon : playIcon}
               />
               <div className="song-details">
                 <p className="song-title">
-                  {currentlyPlaying.title || currentlyPlaying.name}
+                  {extractedMetadata?.title || currentlyPlaying.title || currentlyPlaying.name}
                 </p>
                 <p className="song-artist truncate-text">
-                  {currentlyPlaying.artists
-                    ? currentlyPlaying.artists.map((a) => a.name).join(', ')
-                    : currentlyPlaying.artist || 'Unknown Artist'}
+                  {extractedMetadata?.artist ||
+                    (currentlyPlaying.artists
+                      ? currentlyPlaying.artists.map((a) => a.name).join(', ')
+                      : currentlyPlaying.artist || 'Unknown Artist')}
                 </p>
               </div>
               <div
